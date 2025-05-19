@@ -53,21 +53,36 @@ Before you can run this project, make sure you have the following installed:
     helm dependency update
     ```
 
-4.  **Deploy Charts:**
+4.  **Build Docker Images:**
+
+    Build the Docker images for the backend and frontend:
+
+    ```bash
+    # Build backend image
+    cd backend
+    docker build -t backend-service:latest .
+    cd ..
+
+    # Build frontend image
+    cd frontend
+    docker build -t frontend:latest .
+    cd ..
+    ```
+
+5.  **Deploy Charts:**
 
     Navigate to the `charts` directory:
 
     ```bash
-    cd ..
+    cd charts
     ```
 
     Deploy each of the charts. Replace `<your-namespace>` with your desired namespace (e.g., `oauth-demo`):
 
     ```bash
     helm install keycloak keycloak/keycloak -n <your-namespace> --create-namespace
-    helm install frontend ./frontend -n <your-namespace> --create-namespace
     helm install backend-service ./backend-service -n <your-namespace> --create-namespace
-    helm install database ./database -n <your-namespace> --create-namespace
+    helm install frontend ./frontend -n <your-namespace> --create-namespace
     ```
 
 ## Usage

@@ -25,8 +25,7 @@ keycloak:
       hostPath:
         path: /data/import
     - name: "export"
-      hostPath:
-        path: /data/export
+      emptyDir: {}
 
   extraVolumeMounts:
     # Importing realm-data for the demo setup
