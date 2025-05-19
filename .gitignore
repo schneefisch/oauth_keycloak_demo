@@ -3,3 +3,4 @@
 
 # ignoring parent-charts
 /charts/**/*.tgz
+/backend/main
