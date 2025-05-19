@@ -1,15 +1,24 @@
-# OAuth Demo Project with Keycloak and Go Backend
+# Sports Community Management App with Keycloak Authorization
 
-This project provides a basic demonstration of an OAuth Authorization flow using Keycloak as an Identity Provider and a Go backend service. It's designed for local Kubernetes development and testing.
+This project demonstrates a sports community management application for soccer associations, using Keycloak for role-based access control
+and authorization policies. The application allows multiple organizations (soccer associations) to manage their training appointments
+securely.
 
 ## Overview
 
-The demo consists of the following components:
+The application implements the following structure:
 
-*   **Keycloak:** The Identity Provider, responsible for user authentication and authorization.
-*   **Go Backend Service:** A simple Go application that requires authentication via OAuth.
-*   **Frontend:** A minimal HTML/JavaScript frontend that interacts with the Go backend.
-*   **Kubernetes:** The platform for deploying and managing the application components.
+* **Organizations:** Each soccer association represents a separate organization
+* **Roles:**
+    * **System Admin:** Overall system administrator
+    * **Organization Maintainer:** Manages association settings and users
+    * **Organization User:** Regular users (parents) within an association
+* **Resources:** Training appointments managed by each organization
+* **Components:**
+    * **Keycloak:** Handles authentication and fine-grained authorization
+    * **Go Backend Service:** Manages training appointments and organization data
+    * **Frontend:** User interface for managing / listing appointments
+    * **Kubernetes:** Deployment and management platform
 
 ## Prerequisites
 
@@ -71,6 +80,13 @@ Before you can run this project, make sure you have the following installed:
 
 *   **Helm Values:**  Customize the deployment of each component by modifying the `values.yaml` files in the `charts` directory.
 *   **Keycloak:**  Configure Keycloak users, realms, and clients through the Keycloak Admin Console ([https://localhost:8080](https://localhost:8080) - adapt URL according to your cluster setup).
+
+## Example Use Cases
+
+* Organization maintainers can create and manage training appointments
+* Parents (users) can view their organization's training schedule
+* System administrators can manage all organizations
+* Users are restricted to viewing only their organization's data
 
 ## Contributing
 
