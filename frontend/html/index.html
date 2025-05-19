@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Community Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        header {
+            background-color: #f4f4f4;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        h1 {
+            color: #444;
+        }
+        .appointment {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #5cb85c;
+        }
+        .appointment h3 {
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .error {
+            color: red;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sports Community Management</h1>
+            <p>Manage training appointments for your soccer association</p>
+        </header>
+
+        <div id="appointments-container">
+            <h2>Training Appointments</h2>
+            <div id="appointments-list">
+                <!-- Appointments will be loaded here -->
+                <p>Loading appointments...</p>
+            </div>
+        </div>
+
+        <div id="create-appointment">
+            <h2>Create New Appointment</h2>
+            <div id="error-message" class="error"></div>
+            <form id="appointment-form">
+                <div class="form-group">
+                    <label for="id">ID:</label>
+                    <input type="text" id="id" name="id" required>
+                </div>
+                <div class="form-group">
+                    <label for="organization_id">Organization ID:</label>
+                    <input type="text" id="organization_id" name="organization_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="start_time">Start Time:</label>
+                    <input type="datetime-local" id="start_time" name="start_time" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_time">End Time:</label>
+                    <input type="datetime-local" id="end_time" name="end_time" required>
+                </div>
+                <button type="submit">Create Appointment</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API URL
+        const API_URL = '/api/appointments';
+
+        // Function to fetch appointments
+        async function fetchAppointments() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const appointments = await response.json();
+                displayAppointments(appointments);
+            } catch (error) {
+                console.error('Error fetching appointments:', error);
+                document.getElementById('appointments-list').innerHTML = 
+                    `<p>Error loading appointments: ${error.message}</p>`;
+            }
+        }
+
+        // Function to display appointments
+        function displayAppointments(appointments) {
+            const appointmentsList = document.getElementById('appointments-list');
+            
+            if (appointments.length === 0) {
+                appointmentsList.innerHTML = '<p>No appointments found.</p>';
+                return;
+            }
+
+            let html = '';
+            appointments.forEach(appointment => {
+                html += `
+                    <div class="appointment" data-id="${appointment.id}">
+                        <h3>${appointment.title}</h3>
+                        <p><strong>Organization:</strong> ${appointment.organization_id}</p>
+                        <p><strong>Description:</strong> ${appointment.description || 'No description'}</p>
+                        <p><strong>Start:</strong> ${formatDateTime(appointment.start_time)}</p>
+                        <p><strong>End:</strong> ${formatDateTime(appointment.end_time)}</p>
+                        <button onclick="deleteAppointment('${appointment.id}')">Delete</button>
+                    </div>
+                `;
+            });
+
+            appointmentsList.innerHTML = html;
+        }
+
+        // Function to format date time
+        function formatDateTime(dateTimeStr) {
+            if (!dateTimeStr) return 'Not specified';
+            
+            try {
+                const date = new Date(dateTimeStr);
+                return date.toLocaleString();
+            } catch (e) {
+                return dateTimeStr;
+            }
+        }
+
+        // Function to create a new appointment
+        async function createAppointment(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const errorMessage = document.getElementById('error-message');
+            
+            try {
+                const formData = {
+                    id: form.id.value,
+                    organization_id: form.organization_id.value,
+                    title: form.title.value,
+                    description: form.description.value,
+                    start_time: form.start_time.value,
+                    end_time: form.end_time.value
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Reset form and error message
+                form.reset();
+                errorMessage.textContent = '';
+                
+                // Refresh appointments list
+                fetchAppointments();
+            } catch (error) {
+                console.error('Error creating appointment:', error);
+                errorMessage.textContent = `Error creating appointment: ${error.message}`;
+            }
+        }
+
+        // Function to delete an appointment
+        async function deleteAppointment(id) {
+            if (!confirm('Are you sure you want to delete this appointment?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Refresh appointments list
+                fetchAppointments();
+            } catch (error) {
+                console.error('Error deleting appointment:', error);
+                alert(`Error deleting appointment: ${error.message}`);
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAppointments();
+            document.getElementById('appointment-form').addEventListener('submit', createAppointment);
+        });
+    </script>
+</body>
+</html>
