@@ -38,10 +38,10 @@ Before you can run this project, make sure you have the following installed:
         kind create cluster
         ```
 
-3.  **Add Keycloak Helm Repository:**
+3.  **Add the dependencies:**
     ```bash
-    helm repo add keycloak https://keycloak.github.io/keycloak
-    helm repo update
+    cd charts/keycloak/
+    helm dependency update
     ```
 
 4.  **Deploy Charts:**
@@ -49,7 +49,7 @@ Before you can run this project, make sure you have the following installed:
     Navigate to the `charts` directory:
 
     ```bash
-    cd charts
+    cd ..
     ```
 
     Deploy each of the charts. Replace `<your-namespace>` with your desired namespace (e.g., `oauth-demo`):

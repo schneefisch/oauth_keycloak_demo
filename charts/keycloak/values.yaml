@@ -1,0 +1,15 @@
+keycloak:
+  extraEnvVars:
+    - name: KEYCLOAK_EXTRA_ARGS
+      value: "--import-realm"
+
+  extraVolumes:
+    # Importing realm-data for the demo setup
+    - name: "import"
+      hostPath:
+        path: /data/import
+
+  extraVolumeMounts:
+    # Importing realm-data for the demo setup
+    - name: "import"
+      mountPath: /opt/bitnami/keycloak/data/import

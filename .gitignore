@@ -1,2 +1,5 @@
 /.idea/
 *.iml
+
+# ignoring parent-charts
+/charts/**/*.tgz
