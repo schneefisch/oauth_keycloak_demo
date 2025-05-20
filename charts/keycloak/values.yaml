@@ -24,15 +24,11 @@ keycloak:
     - name: "import"
       hostPath:
         path: /data/import
-    - name: "export"
-      emptyDir: {}
 
   extraVolumeMounts:
     # Importing realm-data for the demo setup
     - name: "import"
       mountPath: /opt/bitnami/keycloak/data/import
-    - name: "export"
-      mountPath: /opt/bitnami/keycloak/data/export
 
   # define admin credentials for my local demo
   auth:
