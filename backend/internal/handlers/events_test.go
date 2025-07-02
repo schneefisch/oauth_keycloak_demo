@@ -17,32 +17,34 @@ func TestGetEvents(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a new test server with the routes set up
+	mux := http.NewServeMux()
+	http.DefaultServeMux = mux
+	SetupRoutes(handler)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
 	// Create a new HTTP request
-	req, err := http.NewRequest(http.MethodGet, "/events", nil)
+	resp, err := http.Get(server.URL + "/events")
 	if err != nil {
-		t.Fatalf("Failed to create request: %v", err)
+		t.Fatalf("Failed to send request: %v", err)
 	}
-
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-
-	// Call the handler function
-	handler.GetEvents(rr, req)
+	defer resp.Body.Close()
 
 	// Check the status code
-	if status := rr.Code; status != http.StatusOK {
+	if status := resp.StatusCode; status != http.StatusOK {
 		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
 	// Check the content type
 	expectedContentType := "application/json"
-	if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
+	if contentType := resp.Header.Get("Content-Type"); contentType != expectedContentType {
 		t.Errorf("Handler returned wrong content type: got %v want %v", contentType, expectedContentType)
 	}
 
 	// Decode the response body
 	var events models.Events
-	if err := json.NewDecoder(rr.Body).Decode(&events); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&events); err != nil {
 		t.Fatalf("Failed to decode response body: %v", err)
 	}
 
@@ -77,20 +79,29 @@ func TestGetEventsMethodNotAllowed(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a new test server with the routes set up
+	mux := http.NewServeMux()
+	http.DefaultServeMux = mux
+	SetupRoutes(handler)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
 	// Create a new HTTP request with POST method
-	req, err := http.NewRequest(http.MethodPost, "/events", nil)
+	req, err := http.NewRequest(http.MethodPost, server.URL+"/events", nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
 
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-
-	// Call the handler function
-	handler.GetEvents(rr, req)
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
 
 	// Check the status code
-	if status := rr.Code; status != http.StatusMethodNotAllowed {
+	if status := resp.StatusCode; status != http.StatusMethodNotAllowed {
 		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusMethodNotAllowed)
 	}
 }
@@ -103,32 +114,34 @@ func TestGetEventByID(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
-	// Create a new HTTP request with the fixed event ID
-	req, err := http.NewRequest(http.MethodGet, "/events/"+mockRepo.FixedEventID, nil)
+	// Create a new test server with the routes set up
+	mux := http.NewServeMux()
+	http.DefaultServeMux = mux
+	SetupRoutes(handler)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Send a GET request to the server
+	resp, err := http.Get(server.URL + "/events/" + mockRepo.FixedEventID)
 	if err != nil {
-		t.Fatalf("Failed to create request: %v", err)
+		t.Fatalf("Failed to send request: %v", err)
 	}
-
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-
-	// Call the handler function
-	handler.GetEventByID(rr, req)
+	defer resp.Body.Close()
 
 	// Check the status code
-	if status := rr.Code; status != http.StatusOK {
+	if status := resp.StatusCode; status != http.StatusOK {
 		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
 	// Check the content type
 	expectedContentType := "application/json"
-	if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
+	if contentType := resp.Header.Get("Content-Type"); contentType != expectedContentType {
 		t.Errorf("Handler returned wrong content type: got %v want %v", contentType, expectedContentType)
 	}
 
 	// Decode the response body
 	var event models.Event
-	if err := json.NewDecoder(rr.Body).Decode(&event); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&event); err != nil {
 		t.Fatalf("Failed to decode response body: %v", err)
 	}
 
@@ -157,20 +170,22 @@ func TestGetEventByIDNotFound(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
-	// Create a new HTTP request with a non-existent event ID
-	req, err := http.NewRequest(http.MethodGet, "/events/non-existent-id", nil)
+	// Create a new test server with the routes set up
+	mux := http.NewServeMux()
+	http.DefaultServeMux = mux
+	SetupRoutes(handler)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Send a GET request to the server with a non-existent event ID
+	resp, err := http.Get(server.URL + "/events/non-existent-id")
 	if err != nil {
-		t.Fatalf("Failed to create request: %v", err)
+		t.Fatalf("Failed to send request: %v", err)
 	}
-
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-
-	// Call the handler function
-	handler.GetEventByID(rr, req)
+	defer resp.Body.Close()
 
 	// Check the status code
-	if status := rr.Code; status != http.StatusNotFound {
+	if status := resp.StatusCode; status != http.StatusNotFound {
 		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusNotFound)
 	}
 }
@@ -183,20 +198,29 @@ func TestGetEventByIDMethodNotAllowed(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a new test server with the routes set up
+	mux := http.NewServeMux()
+	http.DefaultServeMux = mux
+	SetupRoutes(handler)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
 	// Create a new HTTP request with POST method
-	req, err := http.NewRequest(http.MethodPost, "/events/"+mockRepo.FixedEventID, nil)
+	req, err := http.NewRequest(http.MethodPost, server.URL+"/events/"+mockRepo.FixedEventID, nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
 
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-
-	// Call the handler function
-	handler.GetEventByID(rr, req)
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
 
 	// Check the status code
-	if status := rr.Code; status != http.StatusMethodNotAllowed {
+	if status := resp.StatusCode; status != http.StatusMethodNotAllowed {
 		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusMethodNotAllowed)
 	}
 }

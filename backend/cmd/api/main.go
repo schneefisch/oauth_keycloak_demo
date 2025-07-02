@@ -32,25 +32,8 @@ func main() {
 	// Create a new events handler with the repository
 	eventsHandler := handlers.NewEventsHandler(eventsRepo)
 
-	// Register the handler for the /events endpoint
-	http.HandleFunc("/events", eventsHandler.GetEvents)
-
-	// Register the handler for the /events/{id} endpoint
-	http.HandleFunc("/events/", func(w http.ResponseWriter, r *http.Request) {
-		// If the path is exactly "/events/", redirect to "/events"
-		if r.URL.Path == "/events/" {
-			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
-			return
-		}
-		// Otherwise, handle as a request for a specific event
-		eventsHandler.GetEventByID(w, r)
-	})
-
-	// Add a simple health check endpoint
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
+	// Setup all routes
+	handlers.SetupRoutes(eventsHandler)
 
 	// Start the server
 	addr := fmt.Sprintf(":%s", port)

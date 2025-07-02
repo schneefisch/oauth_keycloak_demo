@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/repository"
 )
@@ -54,18 +53,8 @@ func (h *EventsHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract the event ID from the URL path
-	// Expected format: /events/{id}
-	path := r.URL.Path
-	parts := strings.Split(path, "/")
-
-	// Check if the path has the correct format
-	if len(parts) != 3 || parts[1] != "events" {
-		http.Error(w, "Invalid URL path", http.StatusBadRequest)
-		return
-	}
-
-	id := parts[2]
+	// Extract the event ID from the URL path using Go 1.22 path variables
+	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "Event ID is required", http.StatusBadRequest)
 		return
