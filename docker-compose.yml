@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Backend service
+  backend:
+    build:
+      context: ./backend
+    image: backend-service:latest
+    container_name: backend-service
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - KEYCLOAK_URL=http://keycloak:8080
+    depends_on:
+      - keycloak
+    networks:
+      - app-network
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+    image: frontend:latest
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # Keycloak service
+  keycloak:
+    image: bitnami/keycloak:latest
+    container_name: keycloak
+    ports:
+      - "8081:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=bad-password
+      - KEYCLOAK_EXTRA_ARGS=--import-realm --start-dev
+      - KC_DB_URL_HOST=postgres
+      - KC_DB_URL_DATABASE=bitnami_keycloak
+      - KC_DB_USERNAME=bn_keycloak
+      - KC_DB_PASSWORD=Q6uktXCjQ
+    volumes:
+      - ./charts/keycloak/data/import:/opt/bitnami/keycloak/data/import
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  # PostgreSQL for Keycloak
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=bn_keycloak
+      - POSTGRES_PASSWORD=Q6uktXCjQ
+      - POSTGRES_DB=bitnami_keycloak
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

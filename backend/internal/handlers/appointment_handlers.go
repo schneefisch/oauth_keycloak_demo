@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"../models"
+	"github.com/froeser/oauth_keycloak_demo/backend/internal/models"
 )
 
 // AppointmentHandler contains handlers for appointment endpoints

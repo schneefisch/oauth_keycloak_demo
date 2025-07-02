@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"../internal/handlers"
-	"../internal/models"
+	"github.com/froeser/oauth_keycloak_demo/backend/internal/handlers"
+	"github.com/froeser/oauth_keycloak_demo/backend/internal/models"
 )
 
 func main() {

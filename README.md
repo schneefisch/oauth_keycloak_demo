@@ -18,18 +18,17 @@ The application implements the following structure:
     * **Keycloak:** Handles authentication and fine-grained authorization
     * **Go Backend Service:** Manages training appointments and organization data
     * **Frontend:** User interface for managing / listing appointments
-    * **Kubernetes:** Deployment and management platform
 
 ## Prerequisites
 
 Before you can run this project, make sure you have the following installed:
 
-*   **kubectl:** Kubernetes command-line tool ([https://kubernetes.io/docs/tasks/tools/](https://kubernetes.io/docs/tasks/tools/))
-*   **Helm:** Package manager for Kubernetes ([https://helm.sh/docs/intro/install/](https://helm.sh/docs/intro/install/))
 *   **Go:** Programming language for the backend service ([https://go.dev/dl/](https://go.dev/dl/))
-*   **Minikube or Kind:**  Local Kubernetes cluster (choose one) -  [https://minikube.sigs.k8s.io/docs/](https://minikube.sigs.k8s.io/docs/) or [https://kind.sigs.k8s.io/](https://kind.sigs.k8s.io/)
+*   **Docker:** Container platform ([https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/))
+*   **Docker Compose:** Tool for defining and running multi-container Docker applications ([https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/))
+*   **Mage:** Go-based build tool ([https://magefile.org/](https://magefile.org/))
 
-## Setup
+## Local Development Setup
 
 1.  **Clone the Repository:**
     ```bash
@@ -37,64 +36,47 @@ Before you can run this project, make sure you have the following installed:
     cd <your_repository_directory>
     ```
 
-2.  **Start Local Kubernetes Cluster:**
-    *   **Minikube:**
-        ```bash
-        minikube start
-        ```
-    *   **Kind:**
-        ```bash
-        kind create cluster
-        ```
-
-3.  **Add the dependencies:**
+2.  **Install Mage:**
     ```bash
-    cd charts/keycloak/
-    helm dependency update
+    go install github.com/magefile/mage@latest
     ```
 
-4.  **Build Docker Images:**
-
-    Build the Docker images for the backend and frontend:
-
+3.  **Build and Start Services:**
     ```bash
-    # Build backend image
-    cd backend
-    docker build -t backend-service:latest .
-    cd ..
-
-    # Build frontend image
-    cd frontend
-    docker build -t frontend:latest .
-    cd ..
+    mage build   # Build all Docker images
+    mage start   # Start all services with docker-compose
     ```
 
-5.  **Deploy Charts:**
-
-    Navigate to the `charts` directory:
-
+    Or simply run:
     ```bash
-    cd charts
+    mage         # Builds and starts all services
     ```
 
-    Deploy each of the charts. Replace `<your-namespace>` with your desired namespace (e.g., `oauth-demo`):
-
-    ```bash
-    helm install keycloak keycloak/keycloak -n <your-namespace> --create-namespace
-    helm install backend-service ./backend-service -n <your-namespace> --create-namespace
-    helm install frontend ./frontend -n <your-namespace> --create-namespace
-    ```
+4.  **Access the Application:**
+    * Frontend: http://localhost:80
+    * Backend API: http://localhost:8080
+    * Keycloak Admin Console: http://localhost:8081 (admin/bad-password)
 
 ## Usage
 
-*   **Access the Frontend:**  Find the frontend service's ingress or port information from `kubectl get svc -n <your-namespace>`.  Access the frontend URL in your browser.
+*   **Access the Frontend:**  Open http://localhost:80 in your browser.
 *   **Interact with the Backend:**  The frontend will guide you through the OAuth login flow, using Keycloak for authentication.
-*   **Inspect Logs:**  Use `kubectl logs` to view the logs of the different components for debugging.
+*   **Inspect Logs:**  Use `mage logs` to view the logs of all services for debugging.
+
+## Available Mage Commands
+
+*   **mage test**: Run all tests (backend and frontend)
+*   **mage build**: Build all Docker images
+*   **mage start**: Start all services with docker-compose
+*   **mage stop**: Stop all services
+*   **mage clean**: Remove all built artifacts
+*   **mage logs**: Show logs from all services
+*   **mage**: Build and start all services (default command)
 
 ## Configuration
 
-*   **Helm Values:**  Customize the deployment of each component by modifying the `values.yaml` files in the `charts` directory.
-*   **Keycloak:**  Configure Keycloak users, realms, and clients through the Keycloak Admin Console ([https://localhost:8080](https://localhost:8080) - adapt URL according to your cluster setup).
+*   **Docker Compose:**  Customize the deployment by modifying the `docker-compose.yml` file.
+*   **Keycloak:**  Configure Keycloak users, realms, and clients through the Keycloak Admin Console (http://localhost:8081 - admin/bad-password).
 
 ## Example Use Cases
 
