@@ -1,7 +1,7 @@
 # Sports Community Management App with Keycloak Authorization
 
 This project demonstrates a sports community management application for soccer associations, using Keycloak for role-based access control
-and authorization policies. The application allows multiple organizations (soccer associations) to manage their training appointments
+and authorization policies. The application allows multiple organizations (soccer associations) to manage their sports events
 securely.
 
 ## Overview
@@ -13,11 +13,11 @@ The application implements the following structure:
     * **System Admin:** Overall system administrator
     * **Organization Maintainer:** Manages association settings and users
     * **Organization User:** Regular users (parents) within an association
-* **Resources:** Training appointments managed by each organization
+* **Resources:** Sports events managed by each organization
 * **Components:**
     * **Keycloak:** Handles authentication and fine-grained authorization
-    * **Go Backend Service:** Manages training appointments and organization data
-    * **Frontend:** User interface for managing / listing appointments
+    * **Go Backend Service:** Manages sports events and organization data
+    * **Frontend:** User interface for managing / listing events
 
 ### Project Structure
 
@@ -25,24 +25,34 @@ The project follows Go best practices for directory structure:
 
 ```
 /
-├── cmd/                    # Command-line applications
-│   └── api/                # Main API server application
-│       └── main.go         # Entry point for the API server
-├── internal/               # Private application code
-│   └── handlers/           # HTTP request handlers
-│       ├── appointment_handlers.go
-│       └── health_handler.go
-├── pkg/                    # Public libraries that can be used by external applications
-│   └── models/             # Data models
-│       └── appointment.go  # Appointment model and store
+├── backend/                # Backend service
+│   ├── cmd/                # Command-line applications
+│   │   └── api/            # Main API server application
+│   │       └── main.go     # Entry point for the API server
+│   ├── internal/           # Private application code
+│   │   ├── handlers/       # HTTP request handlers
+│   │   │   ├── events.go   # Event handlers
+│   │   │   └── routes.go   # API routes
+│   │   ├── models/         # Data models
+│   │   │   └── event.go    # Event model
+│   │   └── repository/     # Data access layer
+│   │       ├── events.go   # Events repository interface
+│   │       └── postgres_events.go # Postgres implementation
+│   ├── Dockerfile          # Docker build configuration
+│   └── go.mod              # Go module definition
 ├── frontend/               # Frontend application
-│   ├── html/               # HTML templates
+│   ├── html/               # HTML templates and assets
+│   │   ├── css/            # CSS styles
+│   │   ├── js/             # JavaScript files
+│   │   └── templates/      # Angular templates
 │   ├── Dockerfile          # Docker build configuration
 │   └── nginx.conf          # Nginx configuration
-├── charts/                 # Helm charts for Kubernetes deployment
+├── data/                   # Data initialization
+│   ├── db/                 # Database scripts
+│   └── import/             # Keycloak import files
 ├── Dockerfile              # Docker build configuration for the API server
 ├── docker-compose.yml      # Docker Compose configuration
-└── go.mod                  # Go module definition
+└── Magefile.go             # Mage build tasks
 ```
 
 #### Go Best Practices
@@ -51,8 +61,8 @@ This project follows these Go best practices for directory structure:
 
 1. **cmd/**: Contains the main applications for the project. Each subdirectory is a separate executable.
 2. **internal/**: Contains private application code that should not be imported by other projects.
-3. **pkg/**: Contains libraries that can be imported by external applications.
-4. **Root go.mod**: The Go module is defined at the repository root, making the entire repository a Go module.
+3. **Modular structure**: The backend is organized as a separate Go module with its own go.mod file.
+4. **Repository pattern**: Data access is abstracted through repository interfaces.
 5. **Absolute imports**: All imports use absolute paths based on the module path, not relative paths.
 
 ## Prerequisites
@@ -116,8 +126,8 @@ Before you can run this project, make sure you have the following installed:
 
 ## Example Use Cases
 
-* Organization maintainers can create and manage training appointments
-* Parents (users) can view their organization's training schedule
+* Organization maintainers can create and manage sports events
+* Parents (users) can view their organization's event schedule
 * System administrators can manage all organizations
 * Users are restricted to viewing only their organization's data
 
