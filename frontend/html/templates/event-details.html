@@ -1,0 +1,45 @@
+<!-- Event details template -->
+<div class="card" ng-if="selectedEvent">
+    <div class="card-header">
+        Event Details
+    </div>
+    <div class="card-body">
+        <!-- Loading message -->
+        <div ng-if="loadingDetails" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading event details...</p>
+        </div>
+
+        <!-- Error message -->
+        <div ng-if="detailsError" class="alert alert-danger">
+            {{ detailsError }}
+        </div>
+
+        <!-- Event details -->
+        <div ng-if="!loadingDetails && !detailsError">
+            <h2 class="card-title">{{ selectedEvent.title }}</h2>
+            <h6 class="card-subtitle mb-3 text-muted">{{ selectedEvent.date | date:'medium' }}</h6>
+            
+            <div class="mb-3">
+                <h5>Description</h5>
+                <p class="card-text">{{ selectedEvent.description }}</p>
+            </div>
+            
+            <div class="mb-3">
+                <h5>Location</h5>
+                <p class="card-text">{{ selectedEvent.location }}</p>
+            </div>
+            
+            <button class="btn btn-secondary" ng-click="clearSelectedEvent()">Back to List</button>
+        </div>
+    </div>
+</div>
+
+<!-- No event selected message -->
+<div class="card" ng-if="!selectedEvent && !loadingDetails">
+    <div class="card-body text-center">
+        <p class="card-text text-muted">Select an event from the list to view details.</p>
+    </div>
+</div>
