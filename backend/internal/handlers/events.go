@@ -1,24 +1,26 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
-	"github.com/google/uuid"
-	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/models"
+	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/repository"
 )
 
 // EventsHandler handles HTTP requests related to events
-type EventsHandler struct{}
-
-// NewEventsHandler creates a new EventsHandler
-func NewEventsHandler() *EventsHandler {
-	return &EventsHandler{}
+type EventsHandler struct {
+	repo repository.EventsRepository
 }
 
-// GetEvents returns a list of events
-// For simplicity, this returns mock data
+// NewEventsHandler creates a new EventsHandler
+func NewEventsHandler(repo repository.EventsRepository) *EventsHandler {
+	return &EventsHandler{
+		repo: repo,
+	}
+}
+
+// GetEvents returns a list of events from the repository
 func (h *EventsHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 	// Only allow GET method
 	if r.Method != http.MethodGet {
@@ -26,29 +28,11 @@ func (h *EventsHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create some mock events
-	events := models.Events{
-		{
-			ID:          uuid.New().String(),
-			Date:        time.Now().AddDate(0, 0, 7),
-			Title:       "Community Soccer Match",
-			Description: "Weekly soccer match for all community members",
-			Location:    "Community Field",
-		},
-		{
-			ID:          uuid.New().String(),
-			Date:        time.Now().AddDate(0, 0, 14),
-			Title:       "Basketball Tournament",
-			Description: "Annual basketball tournament with teams from neighboring communities",
-			Location:    "Sports Center",
-		},
-		{
-			ID:          uuid.New().String(),
-			Date:        time.Now().AddDate(0, 0, 21),
-			Title:       "Swimming Competition",
-			Description: "Swimming competition for all age groups",
-			Location:    "Community Pool",
-		},
+	// Get events from repository
+	events, err := h.repo.GetEvents(context.Background())
+	if err != nil {
+		http.Error(w, "Error retrieving events", http.StatusInternalServerError)
+		return
 	}
 
 	// Set content type header
