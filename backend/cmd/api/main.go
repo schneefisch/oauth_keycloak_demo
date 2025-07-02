@@ -64,17 +64,17 @@ func setupDatabase() (*sql.DB, error) {
 
 	user := os.Getenv("DB_USER")
 	if user == "" {
-		user = "bn_keycloak"
+		user = "events_user"
 	}
 
 	password := os.Getenv("DB_PASSWORD")
 	if password == "" {
-		password = "Q6uktXCjQ"
+		password = "events_password"
 	}
 
 	dbname := os.Getenv("DB_NAME")
 	if dbname == "" {
-		dbname = "bitnami_keycloak"
+		dbname = "events_demo"
 	}
 
 	// Create connection string
