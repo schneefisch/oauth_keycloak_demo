@@ -19,6 +19,42 @@ The application implements the following structure:
     * **Go Backend Service:** Manages training appointments and organization data
     * **Frontend:** User interface for managing / listing appointments
 
+### Project Structure
+
+The project follows Go best practices for directory structure:
+
+```
+/
+├── cmd/                    # Command-line applications
+│   └── api/                # Main API server application
+│       └── main.go         # Entry point for the API server
+├── internal/               # Private application code
+│   └── handlers/           # HTTP request handlers
+│       ├── appointment_handlers.go
+│       └── health_handler.go
+├── pkg/                    # Public libraries that can be used by external applications
+│   └── models/             # Data models
+│       └── appointment.go  # Appointment model and store
+├── frontend/               # Frontend application
+│   ├── html/               # HTML templates
+│   ├── Dockerfile          # Docker build configuration
+│   └── nginx.conf          # Nginx configuration
+├── charts/                 # Helm charts for Kubernetes deployment
+├── Dockerfile              # Docker build configuration for the API server
+├── docker-compose.yml      # Docker Compose configuration
+└── go.mod                  # Go module definition
+```
+
+#### Go Best Practices
+
+This project follows these Go best practices for directory structure:
+
+1. **cmd/**: Contains the main applications for the project. Each subdirectory is a separate executable.
+2. **internal/**: Contains private application code that should not be imported by other projects.
+3. **pkg/**: Contains libraries that can be imported by external applications.
+4. **Root go.mod**: The Go module is defined at the repository root, making the entire repository a Go module.
+5. **Absolute imports**: All imports use absolute paths based on the module path, not relative paths.
+
 ## Prerequisites
 
 Before you can run this project, make sure you have the following installed:

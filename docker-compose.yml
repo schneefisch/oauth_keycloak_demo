@@ -32,7 +32,7 @@ services:
 
   # Keycloak service
   keycloak:
-    image: bitnami/keycloak:latest
+    image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
     ports:
       - "8081:8080"
@@ -45,7 +45,7 @@ services:
       - KC_DB_USERNAME=bn_keycloak
       - KC_DB_PASSWORD=Q6uktXCjQ
     volumes:
-      - ./charts/keycloak/data/import:/opt/bitnami/keycloak/data/import
+      - ./data/import:/opt/bitnami/keycloak/data/import
     depends_on:
       - postgres
     networks:
