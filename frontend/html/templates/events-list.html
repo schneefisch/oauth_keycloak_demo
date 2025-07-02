@@ -1,0 +1,39 @@
+<!-- Events list template -->
+<div class="card">
+    <div class="card-header">
+        Events List
+    </div>
+    <div class="card-body">
+        <!-- Loading message -->
+        <div ng-if="loading" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading events...</p>
+        </div>
+
+        <!-- Error message -->
+        <div ng-if="error" class="alert alert-danger">
+            {{ error }}
+        </div>
+
+        <!-- No events message -->
+        <div ng-if="!loading && !error && events.length === 0" class="alert alert-info">
+            No events found.
+        </div>
+
+        <!-- Events list -->
+        <div ng-if="!loading && events.length > 0">
+            <div class="list-group">
+                <div class="card mb-3" ng-repeat="event in events">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ event.title }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ event.date | date:'medium' }}</h6>
+                        <p class="card-text">{{ event.description }}</p>
+                        <p class="card-text"><small class="text-muted"><strong>Location:</strong> {{ event.location }}</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,27 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f9fa;
+}
+.navbar {
+    background-color: #ff8c00 !important; /* Orange */
+}
+.navbar-brand {
+    color: white !important;
+    font-weight: bold;
+}
+.card {
+    margin-bottom: 20px;
+    border-left: 4px solid #ff8c00;
+}
+.card-header {
+    background-color: rgba(255, 140, 0, 0.1);
+    font-weight: bold;
+}
+.btn-primary {
+    background-color: #ff8c00;
+    border-color: #ff8c00;
+}
+.btn-primary:hover {
+    background-color: #e67e00;
+    border-color: #e67e00;
+}
