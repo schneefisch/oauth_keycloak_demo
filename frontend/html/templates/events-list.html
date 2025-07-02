@@ -25,14 +25,14 @@
         <!-- Events list -->
         <div ng-if="!loading && events.length > 0">
             <div class="list-group">
-                <div class="card mb-3" ng-repeat="event in events">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ event.title }}</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">{{ event.date | date:'medium' }}</h6>
-                        <p class="card-text">{{ event.description }}</p>
-                        <p class="card-text"><small class="text-muted"><strong>Location:</strong> {{ event.location }}</small></p>
+                <a href="#" class="list-group-item list-group-item-action" 
+                   ng-repeat="event in events" 
+                   ng-click="selectEvent(event.id)">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ event.title }}</h5>
                     </div>
-                </div>
+                    <small class="text-muted">{{ event.date | date:'medium' }}</small>
+                </a>
             </div>
         </div>
     </div>
