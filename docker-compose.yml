@@ -12,8 +12,15 @@ services:
     environment:
       - PORT=8080
       - KEYCLOAK_URL=http://keycloak:8080
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=bn_keycloak
+      - DB_PASSWORD=Q6uktXCjQ
+      - DB_NAME=bitnami_keycloak
+      - DB_SCHEMA=events_backup
     depends_on:
       - keycloak
+      - postgres
     networks:
       - app-network
 
@@ -32,7 +39,7 @@ services:
 
   # Keycloak service
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    image: quay.io/keycloak/keycloak:26.3
     container_name: keycloak
     ports:
       - "8081:8080"
@@ -50,6 +57,7 @@ services:
       - postgres
     networks:
       - app-network
+    entrypoint: /opt/keycloak/bin/kc.sh start-dev --import-realm
 
   # PostgreSQL for Keycloak
   postgres:
@@ -61,6 +69,7 @@ services:
       - POSTGRES_DB=bitnami_keycloak
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init:/docker-entrypoint-initdb.d
     networks:
       - app-network
 
