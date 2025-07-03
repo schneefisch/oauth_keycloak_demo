@@ -23,7 +23,8 @@ The application implements the following structure:
 
 Learn more about the technical aspects of this project through our documentation:
 
-* [Authentication Basics](docs/authentication-basics.md) - Understanding OAuth 2.0, PKCE flow, and token validation
+* [Authentication Basics](docs/01-authentication-basics.md) - Understanding OAuth 2.0, PKCE flow, and token validation
+* [Authentication Architecture](docs/02-service-setup.md) - Detailed explanation of the authentication and authorization architecture using Keycloak
 
 ### Project Structure
 

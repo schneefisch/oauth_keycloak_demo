@@ -1,16 +1,16 @@
 angular.module('eventsApp.services', [])
     .factory('AuthService', function($http, $window) {
-        var service = {};
-        var keycloakUrl = 'http://localhost:8081'; // Keycloak URL
-        var clientId = 'events-frontend'; // Public client with PKCE
-        var redirectUri = window.location.origin; // Current origin
-        var tokenStorage = {}; // In-memory storage for tokens
+        let service = {};
+        let keycloakUrl = 'http://localhost:8081'; // Keycloak URL
+        let clientId = 'events-frontend'; // Public client with PKCE
+        let redirectUri = window.location.origin; // Current origin
+        let tokenStorage = {}; // In-memory storage for tokens
 
         // Generate a random string for PKCE code_verifier
         function generateRandomString(length) {
-            var text = '';
-            var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            for (var i = 0; i < length; i++) {
+            let text = '';
+            let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            for (let i = 0; i < length; i++) {
                 text += possible.charAt(Math.floor(Math.random() * possible.length));
             }
             return text;
@@ -26,42 +26,39 @@ angular.module('eventsApp.services', [])
 
         // Base64Url encode the hash
         function base64UrlEncode(buffer) {
-            var base64 = $window.btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+            return $window.btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
                 .replace(/\+/g, '-')
                 .replace(/\//g, '_')
                 .replace(/=+$/, '');
-            return base64;
         }
 
         // Initialize login process
         service.login = async function() {
             // Generate code_verifier and code_challenge
-            var codeVerifier = generateRandomString(64);
-            var codeChallenge = await sha256(codeVerifier);
+            let codeVerifier = generateRandomString(64);
+            let codeChallenge = await sha256(codeVerifier);
 
             // Store code_verifier for later use
             $window.sessionStorage.setItem('code_verifier', codeVerifier);
 
             // Build authorization URL
-            var authUrl = keycloakUrl + '/realms/events/protocol/openid-connect/auth' +
+            // Redirect to Keycloak
+            $window.location.href = keycloakUrl + '/realms/events/protocol/openid-connect/auth' +
                 '?client_id=' + clientId +
                 '&redirect_uri=' + encodeURIComponent(redirectUri) +
                 '&response_type=code' +
-                '&scope=openid' +
+                '&scope=openid api.schneefisch.oauth-keycloak-demo.events' +
                 '&code_challenge=' + codeChallenge +
                 '&code_challenge_method=S256';
-
-            // Redirect to Keycloak
-            $window.location.href = authUrl;
         };
 
         // Handle the authorization code callback
         service.handleCallback = function() {
-            var urlParams = new URLSearchParams($window.location.search);
-            var code = urlParams.get('code');
+            let urlParams = new URLSearchParams($window.location.search);
+            let code = urlParams.get('code');
 
             if (code) {
-                var codeVerifier = $window.sessionStorage.getItem('code_verifier');
+                let codeVerifier = $window.sessionStorage.getItem('code_verifier');
 
                 if (codeVerifier) {
                     // Exchange code for tokens
@@ -70,13 +67,6 @@ angular.module('eventsApp.services', [])
                         url: keycloakUrl + '/realms/events/protocol/openid-connect/token',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        transformRequest: function(obj) {
-                            var str = [];
-                            for (var p in obj) {
-                                str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-                            }
-                            return str.join("&");
                         },
                         data: {
                             grant_type: 'authorization_code',
@@ -119,7 +109,7 @@ angular.module('eventsApp.services', [])
 
         // Logout
         service.logout = function() {
-            var logoutUrl = keycloakUrl + '/realms/events/protocol/openid-connect/logout' +
+            let logoutUrl = keycloakUrl + '/realms/events/protocol/openid-connect/logout' +
                 '?redirect_uri=' + encodeURIComponent(redirectUri);
 
             // Clear tokens
@@ -132,12 +122,12 @@ angular.module('eventsApp.services', [])
         return service;
     })
     .factory('EventsService', function($http, AuthService) {
-        var service = {};
+        let service = {};
 
         // Helper function to add authorization header
         function getAuthHeaders() {
-            var headers = {};
-            var token = AuthService.getAccessToken();
+            let headers = {};
+            let token = AuthService.getAccessToken();
             if (token) {
                 headers.Authorization = 'Bearer ' + token;
             }
@@ -172,14 +162,14 @@ angular.module('eventsApp.services', [])
         return service;
     })
     .factory('TemplateLoaderService', function($http, $compile) {
-        var service = {};
+        let service = {};
 
         // Load a template and append it to a container
         service.loadTemplate = function(templateUrl, containerId, scope) {
             return $http.get(templateUrl)
                 .then(function(response) {
-                    var container = document.getElementById(containerId);
-                    var compiledTemplate = $compile(response.data)(scope);
+                    let container = document.getElementById(containerId);
+                    let compiledTemplate = $compile(response.data)(scope);
                     angular.element(container).append(compiledTemplate);
                     return compiledTemplate;
                 })
