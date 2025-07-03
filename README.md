@@ -19,6 +19,12 @@ The application implements the following structure:
     * **Go Backend Service:** Manages sports events and organization data
     * **Frontend:** User interface for managing / listing events
 
+## Documentation
+
+Learn more about the technical aspects of this project through our documentation:
+
+* [Authentication Basics](docs/authentication-basics.md) - Understanding OAuth 2.0, PKCE flow, and token validation
+
 ### Project Structure
 
 The project follows Go best practices for directory structure:

@@ -18,6 +18,8 @@ services:
       - DB_PASSWORD=events_password
       - DB_NAME=events_demo
       - DB_SCHEMA=events
+      - CLIENT_ID=events-api
+      - CLIENT_SECRET=g4dHiyKz7TMX4zLkopxrr45q8J9fZzO6
     depends_on:
       - keycloak
       - postgres

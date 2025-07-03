@@ -1,38 +1,52 @@
 <!-- Events list template -->
 <div class="card">
-    <div class="card-header">
-        Events List
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Events List</span>
+        <!-- Authentication buttons -->
+        <div>
+            <button ng-if="!isAuthenticated" class="btn btn-primary btn-sm" ng-click="login()">Login</button>
+            <button ng-if="isAuthenticated" class="btn btn-outline-danger btn-sm" ng-click="logout()">Logout</button>
+        </div>
     </div>
     <div class="card-body">
-        <!-- Loading message -->
-        <div ng-if="loading" class="text-center">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <!-- Authentication required message -->
+        <div ng-if="!isAuthenticated" class="alert alert-warning">
+            <p>Please login to view events.</p>
+            <button class="btn btn-primary" ng-click="login()">Login</button>
+        </div>
+
+        <!-- Content only visible when authenticated -->
+        <div ng-if="isAuthenticated">
+            <!-- Loading message -->
+            <div ng-if="loading" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading events...</p>
             </div>
-            <p class="mt-2">Loading events...</p>
-        </div>
 
-        <!-- Error message -->
-        <div ng-if="error" class="alert alert-danger">
-            {{ error }}
-        </div>
+            <!-- Error message -->
+            <div ng-if="error" class="alert alert-danger">
+                {{ error }}
+            </div>
 
-        <!-- No events message -->
-        <div ng-if="!loading && !error && events.length === 0" class="alert alert-info">
-            No events found.
-        </div>
+            <!-- No events message -->
+            <div ng-if="!loading && !error && events.length === 0" class="alert alert-info">
+                No events found.
+            </div>
 
-        <!-- Events list -->
-        <div ng-if="!loading && events.length > 0">
-            <div class="list-group">
-                <a href="#" class="list-group-item list-group-item-action" 
-                   ng-repeat="event in events" 
-                   ng-click="selectEvent(event.id)">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ event.title }}</h5>
-                    </div>
-                    <small class="text-muted">{{ event.date | date:'medium' }}</small>
-                </a>
+            <!-- Events list -->
+            <div ng-if="!loading && events.length > 0">
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action" 
+                       ng-repeat="event in events" 
+                       ng-click="selectEvent(event.id)">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ event.title }}</h5>
+                        </div>
+                        <small class="text-muted">{{ event.date | date:'medium' }}</small>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
