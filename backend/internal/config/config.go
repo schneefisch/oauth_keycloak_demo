@@ -39,6 +39,7 @@ type AuthConfig struct {
 	ClientID      string `koanf:"client_id"`
 	ClientSecret  string `koanf:"client_secret"`
 	RequiredScope string `koanf:"required_scope"`
+	RealmName     string `koanf:"realm_name"`
 }
 
 // DefaultConfig returns a Config with default values
@@ -58,6 +59,7 @@ func DefaultConfig() *Config {
 			KeycloakURL:   "http://localhost:8081",
 			ClientID:      "events-api",
 			RequiredScope: "events-api-access",
+			RealmName:     "events",
 		},
 	}
 }
@@ -115,6 +117,12 @@ func Load(configFile string) (*Config, error) {
 		cfg.Auth.RequiredScope = requiredScope
 	}
 
+	// Special handling for REALM_NAME environment variable
+	// This is needed to ensure the correct realm name is used for token validation
+	if realmName := os.Getenv("REALM_NAME"); realmName != "" {
+		cfg.Auth.RealmName = realmName
+	}
+
 	return cfg, nil
 }
 
@@ -158,6 +166,9 @@ func TestConfig(overrides *Config) *Config {
 		}
 		if overrides.Auth.RequiredScope != "" {
 			cfg.Auth.RequiredScope = overrides.Auth.RequiredScope
+		}
+		if overrides.Auth.RealmName != "" {
+			cfg.Auth.RealmName = overrides.Auth.RealmName
 		}
 	}
 

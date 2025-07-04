@@ -47,7 +47,7 @@ angular.module('eventsApp.services', ['eventsApp.config'])
                 '?client_id=' + clientId +
                 '&redirect_uri=' + encodeURIComponent(redirectUri) +
                 '&response_type=code' +
-                '&scope=openid events-api-access' +
+                '&scope=openid profile events-api-access' +
                 '&code_challenge=' + codeChallenge +
                 '&code_challenge_method=S256';
         };

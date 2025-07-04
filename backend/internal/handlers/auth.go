@@ -105,7 +105,7 @@ func validateToken(token string, authConfig config.AuthConfig, client HTTPClient
 	}
 
 	// Construct the introspection endpoint URL
-	introspectionURL := fmt.Sprintf("%s/realms/events/protocol/openid-connect/token/introspect", authConfig.KeycloakURL)
+	introspectionURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token/introspect", authConfig.KeycloakURL, authConfig.RealmName)
 
 	// Prepare the request data
 	data := url.Values{}
