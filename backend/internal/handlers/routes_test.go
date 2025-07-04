@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/config"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/models"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/repository"
 )
@@ -18,11 +19,22 @@ func TestRoutesSetup(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a mock auth config
+	mockAuthConfig := config.AuthConfig{
+		KeycloakURL:   "http://mock-keycloak:8080",
+		ClientID:      "test-client",
+		ClientSecret:  "test-secret",
+		RequiredScope: "test-scope",
+	}
+
+	// Create a mock HTTP client
+	mockClient := createMockHTTPClient()
+
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
-	// Use the same SetupRoutes function that's used in main.go
+	// Use the SetupRoutesWithClient function with the mock client
 	http.DefaultServeMux = mux
-	SetupRoutes(handler)
+	SetupRoutesWithClient(handler, mockAuthConfig, mockClient)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
@@ -88,10 +100,15 @@ func TestRoutesSetup(t *testing.T) {
 	// Run the test cases
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a new HTTP request
+			// Create a new HTTP request with a valid token
 			req, err := http.NewRequest(tc.method, server.URL+tc.path, nil)
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
+			}
+
+			// Add Authorization header for all requests except health check
+			if tc.path != "/health" {
+				req.Header.Set("Authorization", "Bearer valid-token")
 			}
 
 			// Send the request

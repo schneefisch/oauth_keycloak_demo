@@ -1,14 +1,68 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/config"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/models"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/repository"
 )
+
+// createMockAuthConfig creates a mock auth config for testing
+func createMockAuthConfig() config.AuthConfig {
+	return config.AuthConfig{
+		KeycloakURL:   "http://mock-keycloak:8080",
+		ClientID:      "test-client",
+		ClientSecret:  "test-secret",
+		RequiredScope: "test-scope",
+	}
+}
+
+// createMockHTTPClient creates a mock HTTP client that returns a valid token response
+func createMockHTTPClient() *MockHTTPClient {
+	return &MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Check if this is a token introspection request
+			if strings.Contains(req.URL.Path, "token/introspect") {
+				// Return a valid token response
+				response := TokenIntrospectionResponse{
+					Active:    true,
+					Scope:     "test-scope",
+					ClientID:  "test-client",
+					Username:  "test-user",
+					TokenType: "Bearer",
+					Exp:       1735689600, // Some future timestamp
+					Iat:       1619712000, // Some past timestamp
+					Nbf:       1619712000, // Some past timestamp
+					Sub:       "test-subject",
+					Aud:       []string{"test-audience"},
+					Iss:       "test-issuer",
+					Jti:       "test-jti",
+				}
+
+				responseBody, _ := json.Marshal(response)
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(bytes.NewBufferString(string(responseBody))),
+					Header:     make(http.Header),
+				}, nil
+			}
+
+			// For any other request, return a generic success response
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString("OK")),
+				Header:     make(http.Header),
+			}, nil
+		},
+	}
+}
 
 func TestGetEvents(t *testing.T) {
 	// Create a mock repository
@@ -17,15 +71,45 @@ func TestGetEvents(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a mock auth config
+	mockAuthConfig := createMockAuthConfig()
+
+	// Create a mock HTTP client
+	mockClient := createMockHTTPClient()
+
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
 	http.DefaultServeMux = mux
-	SetupRoutes(handler)
+
+	// Create the auth middleware with the mock client
+	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+
+	// Register the routes manually
+	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
+	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
+	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/events/" {
+			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
+			return
+		}
+	}))
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	// Create a new HTTP request
-	resp, err := http.Get(server.URL + "/events")
+	// Create a new HTTP request with a valid token
+	req, err := http.NewRequest("GET", server.URL+"/events", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer valid-token")
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("Failed to send request: %v", err)
 	}
@@ -79,18 +163,41 @@ func TestGetEventsMethodNotAllowed(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a mock auth config
+	mockAuthConfig := createMockAuthConfig()
+
+	// Create a mock HTTP client
+	mockClient := createMockHTTPClient()
+
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
 	http.DefaultServeMux = mux
-	SetupRoutes(handler)
+
+	// Create the auth middleware with the mock client
+	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+
+	// Register the routes manually
+	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
+	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
+	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/events/" {
+			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
+			return
+		}
+	}))
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	// Create a new HTTP request with POST method
+	// Create a new HTTP request with POST method and a valid token
 	req, err := http.NewRequest(http.MethodPost, server.URL+"/events", nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	req.Header.Set("Authorization", "Bearer valid-token")
 
 	// Send the request
 	client := &http.Client{}
@@ -114,15 +221,45 @@ func TestGetEventByID(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a mock auth config
+	mockAuthConfig := createMockAuthConfig()
+
+	// Create a mock HTTP client
+	mockClient := createMockHTTPClient()
+
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
 	http.DefaultServeMux = mux
-	SetupRoutes(handler)
+
+	// Create the auth middleware with the mock client
+	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+
+	// Register the routes manually
+	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
+	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
+	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/events/" {
+			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
+			return
+		}
+	}))
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	// Send a GET request to the server
-	resp, err := http.Get(server.URL + "/events/" + mockRepo.FixedEventID)
+	// Create a new HTTP request with a valid token
+	req, err := http.NewRequest("GET", server.URL+"/events/"+mockRepo.FixedEventID, nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer valid-token")
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("Failed to send request: %v", err)
 	}
@@ -170,15 +307,45 @@ func TestGetEventByIDNotFound(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a mock auth config
+	mockAuthConfig := createMockAuthConfig()
+
+	// Create a mock HTTP client
+	mockClient := createMockHTTPClient()
+
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
 	http.DefaultServeMux = mux
-	SetupRoutes(handler)
+
+	// Create the auth middleware with the mock client
+	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+
+	// Register the routes manually
+	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
+	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
+	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/events/" {
+			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
+			return
+		}
+	}))
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	// Send a GET request to the server with a non-existent event ID
-	resp, err := http.Get(server.URL + "/events/non-existent-id")
+	// Create a new HTTP request with a valid token
+	req, err := http.NewRequest("GET", server.URL+"/events/non-existent-id", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer valid-token")
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("Failed to send request: %v", err)
 	}
@@ -198,18 +365,41 @@ func TestGetEventByIDMethodNotAllowed(t *testing.T) {
 	// Create a new events handler with the mock repository
 	handler := NewEventsHandler(mockRepo)
 
+	// Create a mock auth config
+	mockAuthConfig := createMockAuthConfig()
+
+	// Create a mock HTTP client
+	mockClient := createMockHTTPClient()
+
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
 	http.DefaultServeMux = mux
-	SetupRoutes(handler)
+
+	// Create the auth middleware with the mock client
+	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+
+	// Register the routes manually
+	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
+	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
+	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/events/" {
+			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
+			return
+		}
+	}))
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	// Create a new HTTP request with POST method
+	// Create a new HTTP request with POST method and a valid token
 	req, err := http.NewRequest(http.MethodPost, server.URL+"/events/"+mockRepo.FixedEventID, nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	req.Header.Set("Authorization", "Bearer valid-token")
 
 	// Send the request
 	client := &http.Client{}

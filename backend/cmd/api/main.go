@@ -5,22 +5,22 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	_ "github.com/lib/pq"
+	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/config"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/handlers"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/repository"
 )
 
 func main() {
-	// Get port from environment variable or use default
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	// Load configuration
+	cfg, err := config.Load("")
+	if err != nil {
+		log.Fatalf("Error loading configuration: %v", err)
 	}
 
 	// Set up database connection
-	db, err := setupDatabase()
+	db, err := setupDatabase(cfg.Database)
 	if err != nil {
 		log.Fatalf("Error setting up database: %v", err)
 	}
@@ -32,11 +32,11 @@ func main() {
 	// Create a new events handler with the repository
 	eventsHandler := handlers.NewEventsHandler(eventsRepo)
 
-	// Setup all routes
-	handlers.SetupRoutes(eventsHandler)
+	// Setup all routes with auth configuration
+	handlers.SetupRoutes(eventsHandler, cfg.Auth)
 
 	// Start the server
-	addr := fmt.Sprintf(":%s", port)
+	addr := fmt.Sprintf(":%s", cfg.Server.Port)
 	log.Printf("Server starting on %s", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatalf("Error starting server: %v", err)
@@ -44,36 +44,9 @@ func main() {
 }
 
 // setupDatabase creates a connection to the PostgreSQL database
-func setupDatabase() (*sql.DB, error) {
-	// Get database connection details from environment variables
-	host := os.Getenv("DB_HOST")
-	if host == "" {
-		host = "postgres"
-	}
-
-	port := os.Getenv("DB_PORT")
-	if port == "" {
-		port = "5432"
-	}
-
-	user := os.Getenv("DB_USER")
-	if user == "" {
-		user = "events_user"
-	}
-
-	password := os.Getenv("DB_PASSWORD")
-	if password == "" {
-		password = "events_password"
-	}
-
-	dbname := os.Getenv("DB_NAME")
-	if dbname == "" {
-		dbname = "events_demo"
-	}
-
-	// Create connection string
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+func setupDatabase(dbConfig config.DatabaseConfig) (*sql.DB, error) {
+	// Create connection string using the configuration
+	connStr := dbConfig.ConnectionString()
 
 	// Open database connection
 	db, err := sql.Open("postgres", connStr)

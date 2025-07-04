@@ -20,6 +20,7 @@ services:
       - DB_SCHEMA=events
       - CLIENT_ID=events-api
       - CLIENT_SECRET=g4dHiyKz7TMX4zLkopxrr45q8J9fZzO6
+      - REQUIRED_SCOPE=profile
     depends_on:
       - keycloak
       - postgres
