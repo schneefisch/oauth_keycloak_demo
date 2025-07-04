@@ -1,1 +1,1 @@
-angular.module('eventsApp', ['eventsApp.services', 'eventsApp.controllers']);
+angular.module('eventsApp', ['eventsApp.config', 'eventsApp.services', 'eventsApp.controllers']);

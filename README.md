@@ -19,6 +19,11 @@ The application implements the following structure:
     * **Go Backend Service:** Manages sports events and organization data
     * **Frontend:** User interface for managing / listing events
 
+## Testuser
+
+* Username: `f.roeser+demo@smight.com`
+* Password: `Test1234567890!`
+
 ## Documentation
 
 Learn more about the technical aspects of this project through our documentation:

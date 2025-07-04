@@ -1,8 +1,8 @@
-angular.module('eventsApp.services', [])
-    .factory('AuthService', function($http, $window) {
+angular.module('eventsApp.services', ['eventsApp.config'])
+    .factory('AuthService', function($http, $window, CONFIG) {
         let service = {};
-        let keycloakUrl = 'http://localhost:8081'; // Keycloak URL
-        let clientId = 'events-frontend'; // Public client with PKCE
+        let keycloakUrl = CONFIG.KEYCLOAK_URL; // Use Keycloak URL from config
+        let clientId = CONFIG.KEYCLOAK_CLIENT_ID; // Public client with PKCE
         let redirectUri = window.location.origin; // Current origin
         let tokenStorage = {}; // In-memory storage for tokens
 
@@ -43,11 +43,11 @@ angular.module('eventsApp.services', [])
 
             // Build authorization URL
             // Redirect to Keycloak
-            $window.location.href = keycloakUrl + '/realms/events/protocol/openid-connect/auth' +
+            $window.location.href = keycloakUrl + '/realms/' + CONFIG.KEYCLOAK_REALM + '/protocol/openid-connect/auth' +
                 '?client_id=' + clientId +
                 '&redirect_uri=' + encodeURIComponent(redirectUri) +
                 '&response_type=code' +
-                '&scope=openid api.schneefisch.oauth-keycloak-demo.events' +
+                '&scope=openid events-api-access' +
                 '&code_challenge=' + codeChallenge +
                 '&code_challenge_method=S256';
         };
@@ -62,19 +62,21 @@ angular.module('eventsApp.services', [])
 
                 if (codeVerifier) {
                     // Exchange code for tokens
+                    // Create form data properly for x-www-form-urlencoded
+                    let formData = new URLSearchParams();
+                    formData.append('grant_type', 'authorization_code');
+                    formData.append('client_id', clientId);
+                    formData.append('code', code);
+                    formData.append('redirect_uri', redirectUri);
+                    formData.append('code_verifier', codeVerifier);
+
                     return $http({
                         method: 'POST',
-                        url: keycloakUrl + '/realms/events/protocol/openid-connect/token',
+                        url: keycloakUrl + '/realms/' + CONFIG.KEYCLOAK_REALM + '/protocol/openid-connect/token',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded'
                         },
-                        data: {
-                            grant_type: 'authorization_code',
-                            client_id: clientId,
-                            code: code,
-                            redirect_uri: redirectUri,
-                            code_verifier: codeVerifier
-                        }
+                        data: formData.toString()
                     }).then(function(response) {
                         // Store tokens
                         tokenStorage.accessToken = response.data.access_token;
@@ -109,7 +111,7 @@ angular.module('eventsApp.services', [])
 
         // Logout
         service.logout = function() {
-            let logoutUrl = keycloakUrl + '/realms/events/protocol/openid-connect/logout' +
+            let logoutUrl = keycloakUrl + '/realms/' + CONFIG.KEYCLOAK_REALM + '/protocol/openid-connect/logout' +
                 '?redirect_uri=' + encodeURIComponent(redirectUri);
 
             // Clear tokens
@@ -121,8 +123,9 @@ angular.module('eventsApp.services', [])
 
         return service;
     })
-    .factory('EventsService', function($http, AuthService) {
+    .factory('EventsService', function($http, AuthService, CONFIG) {
         let service = {};
+        let backendUrl = CONFIG.BACKEND_URL; // Use backend URL from config
 
         // Helper function to add authorization header
         function getAuthHeaders() {
@@ -136,27 +139,27 @@ angular.module('eventsApp.services', [])
 
         // Fetch all events
         service.getAllEvents = function() {
-            return $http.get('/events', getAuthHeaders());
+            return $http.get(backendUrl + '/events', getAuthHeaders());
         };
 
         // Get a single event by ID
         service.getEventById = function(eventId) {
-            return $http.get('/events/' + eventId, getAuthHeaders());
+            return $http.get(backendUrl + '/events/' + eventId, getAuthHeaders());
         };
 
         // Create a new event
         service.createEvent = function(eventData) {
-            return $http.post('/events', eventData, getAuthHeaders());
+            return $http.post(backendUrl + '/events', eventData, getAuthHeaders());
         };
 
         // Update an existing event
         service.updateEvent = function(eventId, eventData) {
-            return $http.put('/events/' + eventId, eventData, getAuthHeaders());
+            return $http.put(backendUrl + '/events/' + eventId, eventData, getAuthHeaders());
         };
 
         // Delete an event
         service.deleteEvent = function(eventId) {
-            return $http.delete('/events/' + eventId, getAuthHeaders());
+            return $http.delete(backendUrl + '/events/' + eventId, getAuthHeaders());
         };
 
         return service;

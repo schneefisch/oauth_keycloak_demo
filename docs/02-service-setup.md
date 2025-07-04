@@ -125,7 +125,7 @@ Without proper CORS configuration, modern browsers would block cross-origin requ
 
 ### What We Implemented
 
-We created a dedicated client scope named `api.schneefisch.oauth-keycloak-demo.events` and configured the frontend to request this scope during authentication. We also updated the frontend code to include this scope in the authorization request.
+We created a dedicated client scope named `events-api-access` and configured the frontend to request this scope during authentication. We also updated the frontend code to include this scope in the authorization request.
 
 ### Why This Approach
 
@@ -140,6 +140,36 @@ This scope-based access control mechanism provides several advantages:
 4. **Separation of Concerns**: The frontend explicitly requests the permissions it needs, following the principle of least privilege.
 
 The implementation in the frontend code ensures that the appropriate scope is requested during the authentication process, establishing a secure channel for API access.
+
+### Relationship Between Backend Resource:Scope and Frontend Client Scope
+
+#### How They Connect
+
+The relationship between the backend resource:scope configuration and the frontend client scope `events-api-access` represents a critical aspect of our security architecture:
+
+1. **Backend Resource:Scope Definition**: In the backend client (`api.schneefisch.oauth-keycloak-demo.events`), we defined resources (like "events") and scopes (like "read", "write", "delete") that represent the protected assets and operations in our application.
+
+2. **Client Scope as Access Gateway**: The `events-api-access` client scope serves as a gateway that connects the frontend's authentication process to the backend's resource-based authorization system. When the frontend requests this scope during authentication, it's essentially asking for permission to access the protected resources in the backend.
+
+3. **Token Enrichment**: When Keycloak issues an access token that includes the `events-api-access` scope, it enriches the token with information about the resources and scopes the user is authorized to access based on their roles and permissions.
+
+4. **Backend Validation**: The backend service validates the token and examines the included permissions to determine if the user has the necessary access rights for the requested operation on a specific resource.
+
+#### Logic Behind the Complexity
+
+This multi-layered approach might seem complex, but it serves several important purposes:
+
+1. **Separation of Authentication and Authorization**: By separating the client scope (authentication concern) from the resource:scope (authorization concern), we maintain a clean separation between these two security aspects.
+
+2. **Flexible Permission Model**: This architecture allows for a flexible permission model where different users can have different levels of access to the same resources based on their roles and attributes.
+
+3. **Security in Depth**: The multiple layers of security checks (frontend requesting scope, token validation, resource permission checks) provide defense in depth against potential security breaches.
+
+4. **Scalability**: As the application grows, new resources and scopes can be added to the backend without changing the frontend authentication flow, and new client scopes can be introduced for different types of access.
+
+In practice, this means that when a user authenticates through the frontend, they receive a token that includes the `events-api-access` scope. This token, when presented to the backend, allows the backend to determine exactly which operations (read, write, delete) the user is allowed to perform on which resources (events), based on the user's roles and the permission policies configured in Keycloak.
+
+This architecture follows the principle of least privilege by ensuring that users only receive the permissions they need, and it provides a centralized location (Keycloak) for managing access control policies across the entire application.
 
 ## Conclusion
 
