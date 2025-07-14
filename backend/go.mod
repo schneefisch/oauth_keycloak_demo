@@ -13,7 +13,9 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/go-oauth2/oauth2/v4 v4.5.3 // indirect
 	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

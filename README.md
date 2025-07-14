@@ -24,6 +24,10 @@ The application implements the following structure:
 * Username: `f.roeser+demo@smight.com`
 * Password: `Test1234567890!`
 
+## Next Steps
+
+
+
 ## Documentation
 
 Learn more about the technical aspects of this project through our documentation:

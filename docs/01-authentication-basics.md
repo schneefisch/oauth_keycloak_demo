@@ -13,13 +13,16 @@ This article explains the authentication and authorization mechanisms used in th
 
 ## Introduction
 
-Modern web applications require robust authentication and authorization mechanisms to protect user data and ensure secure access to resources. The Sports Community Management App implements industry-standard protocols through Keycloak, a popular open-source Identity and Access Management solution.
+Modern web applications require robust authentication and authorization mechanisms to protect user data and ensure 
+secure access to resources. The Sports Community Management App implements industry-standard protocols through Keycloak, 
+a popular open-source Identity and Access Management solution.
 
 ## Central Identity Provider Setup
 
 ### What is a Central Identity Provider?
 
-A central identity provider (IdP) is a service that stores and manages user identities and provides authentication services to multiple applications. Using a central IdP offers several advantages:
+A central identity provider (IdP) is a service that stores and manages user identities and provides authentication 
+services to multiple applications. Using a central IdP offers several advantages:
 
 - **Single Sign-On (SSO)**: Users can authenticate once and access multiple applications without re-entering credentials
 - **Centralized User Management**: User accounts, roles, and permissions are managed in one place
