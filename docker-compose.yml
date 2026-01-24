@@ -2,44 +2,44 @@ version: '3.8'
 
 services:
   # Backend service
-  backend:
-    build:
-      context: ./backend
-    image: backend-service:latest
-    container_name: backend-service
-    ports:
-      - "8082:8080"
-    environment:
-      - PORT=8080
-      - KEYCLOAK_URL=http://keycloak:8080
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=events_user
-      - DB_PASSWORD=events_password
-      - DB_NAME=events_demo
-      - DB_SCHEMA=events
-      - CLIENT_ID=events-api
-      - CLIENT_SECRET=g4dHiyKz7TMX4zLkopxrr45q8J9fZzO6
-      - REQUIRED_SCOPE=profile
-      - REALM_NAME=events
-    depends_on:
-      - keycloak
-      - postgres
-    networks:
-      - app-network
-
-  # Frontend service
-  frontend:
-    build:
-      context: ./frontend
-    image: frontend:latest
-    container_name: frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - app-network
+#  backend:
+#    build:
+#      context: ./backend
+#    image: backend-service:latest
+#    container_name: backend-service
+#    ports:
+#      - "8082:8080"
+#    environment:
+#      - PORT=8080
+#      - KEYCLOAK_URL=http://keycloak:8080
+#      - DB_HOST=postgres
+#      - DB_PORT=5432
+#      - DB_USER=events_user
+#      - DB_PASSWORD=events_password
+#      - DB_NAME=events_demo
+#      - DB_SCHEMA=events
+#      - CLIENT_ID=events-api
+#      - CLIENT_SECRET=g4dHiyKz7TMX4zLkopxrr45q8J9fZzO6
+#      - REQUIRED_SCOPE=profile
+#      - REALM_NAME=events
+#    depends_on:
+#      - keycloak
+#      - postgres
+#    networks:
+#      - app-network
+#
+#  # Frontend service
+#  frontend:
+#    build:
+#      context: ./frontend
+#    image: frontend:latest
+#    container_name: frontend
+#    ports:
+#      - "80:80"
+#    depends_on:
+#      - backend
+#    networks:
+#      - app-network
 
   # Keycloak service
   keycloak:
@@ -67,16 +67,16 @@ services:
 
   # PostgreSQL for Keycloak
   postgres:
-    image: postgres:13
+    image: postgres:18
     container_name: postgres
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=Q6uktXCjQ
+      - POSTGRES_PASSWORD=admin
       - POSTGRES_DB=events_demo
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./data/db/01-create-events-schema.sql:/docker-entrypoint-initdb.d/01-create-events-schema.sql
     networks:
       - app-network
