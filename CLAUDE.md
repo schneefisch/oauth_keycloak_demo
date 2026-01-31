@@ -39,7 +39,7 @@ data/
 ```
 
 ## Stack
-Go 1.24 | AngularJS | PostgreSQL 13 | Keycloak 26.3 | Nginx | Mage | koanf v2
+Go 1.24 | AngularJS | PostgreSQL 13 | Keycloak 26.5.2 | Nginx | Mage | koanf v2
 
 ## Go Conventions
 
