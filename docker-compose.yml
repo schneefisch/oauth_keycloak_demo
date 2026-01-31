@@ -43,7 +43,7 @@ services:
 
   # Keycloak service
   keycloak:
-    image: quay.io/keycloak/keycloak:26.3
+    image: quay.io/keycloak/keycloak:26.5.2
     container_name: keycloak
     ports:
       - "8081:8080"
@@ -56,14 +56,14 @@ services:
       - KC_DB_SCHEMA=keycloak
       - KC_DB_USERNAME=keycloak_user
       - KC_DB_PASSWORD=keycloak_password
-      - KC_FEATURES=scripts
+      - KC_FEATURES=scripts,organization
     volumes:
       - ./data/import:/opt/keycloak/data/import
     depends_on:
       - postgres
     networks:
       - app-network
-    entrypoint: /opt/keycloak/bin/kc.sh start-dev --import-realm --features=scripts
+    entrypoint: /opt/keycloak/bin/kc.sh start-dev --import-realm --features=scripts,organization
 
   # PostgreSQL for Keycloak
   postgres:
