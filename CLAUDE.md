@@ -85,6 +85,30 @@ id VARCHAR(36) PK, date TIMESTAMP, title VARCHAR(255), description TEXT, locatio
 - Mocks: `repository/mock_events.go`, interface-based
 - Run: `cd backend && go test ./...`
 
+## CI/CD Verification (Required)
+
+**GitHub Actions runs on every push.** Before marking any code change as complete:
+
+1. **Push changes** to the feature branch
+2. **Check CI status** using: `gh run list --branch <branch> --limit 1`
+3. **View details if failed**: `gh run view <run-id> --log-failed`
+4. **Fix failures** and push again until CI passes
+5. **Only then** consider the task complete
+
+**CI checks performed:**
+- `go test -race` - Unit tests with race detection
+- `go vet` - Static analysis
+- `gofmt` - Code formatting
+- `staticcheck` - Additional linting
+- Docker build - Image builds successfully
+
+**Quick CI commands:**
+```bash
+gh run list --branch $(git branch --show-current) --limit 3  # Recent runs
+gh run watch                                                  # Watch current run
+gh run view --log-failed                                      # See failures
+```
+
 ## Key Files
 | Purpose        | Path                                    |
 |----------------|-----------------------------------------|
@@ -97,6 +121,7 @@ id VARCHAR(36) PK, date TIMESTAMP, title VARCHAR(255), description TEXT, locatio
 | Repository     | backend/internal/repository/events.go   |
 | Docker         | docker-compose.yml                      |
 | Build          | Magefile.go                             |
+| CI Pipeline    | .github/workflows/ci.yml                |
 
 ## Common Tasks
 - **New endpoint:** handler in `handlers/` → register in `routes.go` → add tests
