@@ -8,6 +8,8 @@ mage            # build + start all
 mage build      # docker images
 mage start/stop # services
 mage test       # go test ./...
+mage testci     # tests with race detection + coverage (CI)
+mage lint       # go vet + gofmt checks
 mage logs/clean
 ```
 
@@ -96,11 +98,10 @@ id VARCHAR(36) PK, date TIMESTAMP, title VARCHAR(255), description TEXT, locatio
 5. **Only then** consider the task complete
 
 **CI checks performed:**
-- `go test -race` - Unit tests with race detection
-- `go vet` - Static analysis
-- `gofmt` - Code formatting
+- `mage testci` - Unit tests with race detection + coverage
+- `mage lint` - go vet + gofmt formatting
 - `staticcheck` - Additional linting
-- Docker build - Image builds successfully
+- `mage build` - Docker image builds
 
 **Quick CI commands:**
 ```bash

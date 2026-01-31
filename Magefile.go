@@ -25,6 +25,31 @@ func Test() error {
 	return nil
 }
 
+// TestCI runs tests with race detection and coverage (for CI)
+func TestCI() error {
+	fmt.Println("Running backend tests with race detection and coverage...")
+	if err := sh("cd backend && go test -v -race -coverprofile=coverage.out ./..."); err != nil {
+		return err
+	}
+	return sh("cd backend && go tool cover -func=coverage.out")
+}
+
+// Lint runs static analysis and formatting checks
+func Lint() error {
+	fmt.Println("Running go vet...")
+	if err := sh("cd backend && go vet ./..."); err != nil {
+		return err
+	}
+
+	fmt.Println("Checking formatting...")
+	if err := sh("cd backend && test -z \"$(gofmt -l .)\" || (gofmt -l . && exit 1)"); err != nil {
+		return fmt.Errorf("gofmt check failed: %w", err)
+	}
+
+	fmt.Println("All lint checks passed")
+	return nil
+}
+
 // Build builds all services
 func Build() error {
 	fmt.Println("Building backend...")
