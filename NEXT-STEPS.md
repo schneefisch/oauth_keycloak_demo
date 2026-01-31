@@ -25,12 +25,59 @@ This document outlines the remaining work to complete the OAuth/Keycloak demo ap
 
 | Feature | Status | Priority |
 |---------|--------|----------|
+| Keycloak 26.5.2 Upgrade | ❌ Missing | High |
 | Event CRUD Operations | ❌ Missing | High |
 | Role-based Access Control (RBAC) | ❌ Missing | High |
 | Multi-Organization Support | ❌ Missing | Medium |
 | Token Refresh | ❌ Missing | Medium |
 | Frontend Tests | ❌ Missing | Low |
 | API Documentation | ❌ Missing | Low |
+
+---
+
+## Phase 0: Upgrade Keycloak to 26.5.2
+
+Keycloak 26.5.2 introduces the native **Organizations** feature, which provides built-in multi-tenancy support. This replaces the need for custom group-based organization management.
+
+### 0.1 Update Docker Compose
+
+**File:** `docker-compose.yml`
+
+Change Keycloak image version:
+```yaml
+keycloak:
+  image: quay.io/keycloak/keycloak:26.5.2
+  # ... rest of config
+  environment:
+    # ... existing env vars
+    - KC_FEATURES=scripts,organization  # Enable organization feature
+  entrypoint: /opt/keycloak/bin/kc.sh start-dev --import-realm --features=scripts,organization
+```
+
+### 0.2 Enable Organizations Feature
+
+The Organizations feature must be enabled via:
+- Feature flag: `--features=organization`
+- Or environment variable: `KC_FEATURES=organization`
+
+### 0.3 Verify Upgrade
+
+After upgrading:
+1. Run `mage build && mage start`
+2. Access Keycloak admin console at http://localhost:8081
+3. Verify "Organizations" appears in the left sidebar under the realm
+4. Confirm existing realm import still works
+
+### 0.4 Key Organization Feature Capabilities
+
+| Capability | Description |
+|------------|-------------|
+| Organization Management | Create/manage organizations in Keycloak Admin UI |
+| Member Management | Add/remove users from organizations |
+| Organization Roles | Define roles within organization context |
+| Token Claims | Organization membership included in tokens |
+| Identity Brokering | Organization-specific identity providers |
+| Domain Verification | Link email domains to organizations |
 
 ---
 
@@ -178,50 +225,177 @@ func (h *EventsHandler) requireRole(role string, next http.HandlerFunc) http.Han
 
 ---
 
-## Phase 3: Multi-Organization Support
+## Phase 3: Multi-Organization Support (using Keycloak Organizations)
 
-The README describes organizations (soccer associations) where users can only see their organization's events.
+The README describes organizations (soccer associations) where users can only see their organization's events. With Keycloak 26.5.2, we use the native **Organizations** feature instead of groups.
 
-### 3.1 Database: Add Organization Tables
+### 3.1 Keycloak: Create Organizations
 
-**File:** `data/db/02-create-organizations.sql` (new file)
+In Keycloak Admin Console (http://localhost:8081):
+
+1. Navigate to **Organizations** in the left sidebar
+2. Click **Create organization**
+3. Create organizations for each soccer association:
+   - Name: "FC Example Soccer Club"
+   - Alias: "fc-example" (used in API/tokens)
+   - Description: Optional
+4. Repeat for each association
+
+### 3.2 Keycloak: Add Members to Organizations
+
+For each organization:
+1. Go to **Organizations** → Select organization → **Members**
+2. Click **Add member**
+3. Search and add users
+4. Assign organization-specific roles if needed
+
+### 3.3 Keycloak: Configure Organization Token Claims
+
+Ensure organization membership is included in tokens:
+
+**File:** `data/import/events-realm.json`
+
+Add a protocol mapper to include organization in tokens:
+```json
+{
+  "name": "organization",
+  "protocol": "openid-connect",
+  "protocolMapper": "oidc-organization-membership-mapper",
+  "consentRequired": false,
+  "config": {
+    "id.token.claim": "true",
+    "access.token.claim": "true",
+    "claim.name": "organization",
+    "userinfo.token.claim": "true"
+  }
+}
+```
+
+The token will include an `organization` claim with the user's organization membership:
+```json
+{
+  "organization": {
+    "fc-example": {
+      "name": "FC Example Soccer Club",
+      "roles": ["member"]
+    }
+  }
+}
+```
+
+### 3.4 Database: Add Organization Reference to Events
+
+**File:** `data/db/02-add-organization-to-events.sql` (new file)
 
 ```sql
-CREATE TABLE events.organizations (
-    id VARCHAR(36) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Add organization_id to events
+-- Add organization_id to events (references Keycloak organization alias)
 ALTER TABLE events.events
-ADD COLUMN organization_id VARCHAR(36) REFERENCES events.organizations(id);
+ADD COLUMN organization_id VARCHAR(255);
 
--- Create user-organization mapping (or use Keycloak groups)
-CREATE TABLE events.user_organizations (
-    user_id VARCHAR(36) NOT NULL,
-    organization_id VARCHAR(36) NOT NULL REFERENCES events.organizations(id),
-    PRIMARY KEY (user_id, organization_id)
-);
+-- Create index for organization queries
+CREATE INDEX idx_events_organization ON events.events(organization_id);
+
+-- Update existing events with a default organization (optional)
+-- UPDATE events.events SET organization_id = 'fc-example' WHERE organization_id IS NULL;
 ```
 
-### 3.2 Keycloak: Configure Groups
+Note: We store the Keycloak organization alias (e.g., "fc-example") rather than maintaining a separate organizations table. Keycloak is the source of truth for organization data.
 
-Use Keycloak groups to represent organizations:
-- Create group per organization
-- Assign users to groups
-- Include group membership in tokens
+### 3.5 Backend: Extract Organization from Token
 
-### 3.3 Backend: Organization-Scoped Queries
+**File:** `backend/internal/handlers/auth.go`
 
-Modify repository to filter events by organization:
+Update token validation to extract organization claims:
 ```go
-GetEventsByOrganization(ctx context.Context, orgID string) (models.Events, error)
+type TokenInfo struct {
+    Active       bool
+    Scope        string
+    Username     string
+    Roles        []string
+    Organization map[string]OrganizationMembership  // Add organization extraction
+}
+
+type OrganizationMembership struct {
+    Name  string   `json:"name"`
+    Roles []string `json:"roles"`
+}
+
+// In validateToken(), parse the organization claim from introspection response
 ```
 
-### 3.4 Backend: Extract Organization from Token
+### 3.6 Backend: Organization-Scoped Queries
 
-Parse group/organization claims from introspection response and filter data accordingly.
+**File:** `backend/internal/repository/events.go`
+
+Add organization-scoped methods to the interface:
+```go
+type EventsRepository interface {
+    GetEvents(ctx context.Context) (models.Events, error)
+    GetEventByID(ctx context.Context, id string) (*models.Event, error)
+    // New organization-scoped methods
+    GetEventsByOrganization(ctx context.Context, orgID string) (models.Events, error)
+    CreateEvent(ctx context.Context, event *models.Event) error  // includes org_id
+}
+```
+
+**File:** `backend/internal/repository/postgres_events.go`
+
+```go
+func (r *PostgresEventsRepository) GetEventsByOrganization(ctx context.Context, orgID string) (models.Events, error) {
+    query := `SELECT id, date, title, description, location, organization_id
+              FROM events.events
+              WHERE organization_id = $1
+              ORDER BY date DESC`
+    // ... implementation
+}
+```
+
+### 3.7 Backend: Enforce Organization Isolation
+
+**File:** `backend/internal/handlers/events.go`
+
+Modify handlers to filter by user's organization:
+```go
+func (h *EventsHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
+    // Get organization from request context (set by auth middleware)
+    orgID := r.Context().Value("organization").(string)
+
+    // Fetch only events for this organization
+    events, err := h.repo.GetEventsByOrganization(r.Context(), orgID)
+    // ...
+}
+```
+
+### 3.8 Frontend: Display Organization Context
+
+**File:** `frontend/html/js/services.js`
+
+Extract and store organization from token:
+```javascript
+// In AuthService, after token exchange
+this.organization = this.parseOrganizationFromToken(tokenResponse.access_token);
+
+parseOrganizationFromToken: function(accessToken) {
+    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+    return payload.organization || {};
+}
+```
+
+**File:** `frontend/html/templates/events-list.html`
+
+Display organization name in UI:
+```html
+<div class="organization-header" ng-if="currentOrganization">
+    <h2>{{ currentOrganization.name }} Events</h2>
+</div>
+```
+
+### 3.9 System Admin: Cross-Organization Access
+
+For system admins who need to see all organizations:
+- Check for `system-admin` role in token
+- If present, skip organization filtering
+- Optionally allow organization switching in UI
 
 ---
 
@@ -306,11 +480,12 @@ Add end-to-end tests that:
 
 ## Implementation Order Recommendation
 
-1. **Phase 1** (Event CRUD) - Foundation for all other features
-2. **Phase 2** (RBAC) - Required before multi-org to control who can do what
-3. **Phase 4** (Token Refresh) - Improves UX, can be done in parallel
-4. **Phase 3** (Multi-Org) - Most complex, requires CRUD and RBAC first
-5. **Phase 5** (Testing/Docs) - Ongoing throughout development
+1. **Phase 0** (Keycloak Upgrade) - Must be done first to enable Organizations feature
+2. **Phase 1** (Event CRUD) - Foundation for all other features
+3. **Phase 2** (RBAC) - Required before multi-org to control who can do what
+4. **Phase 4** (Token Refresh) - Improves UX, can be done in parallel
+5. **Phase 3** (Multi-Org) - Most complex, requires CRUD, RBAC, and Keycloak Organizations
+6. **Phase 5** (Testing/Docs) - Ongoing throughout development
 
 ---
 
@@ -328,9 +503,12 @@ Add end-to-end tests that:
 
 | Task | Files to Modify |
 |------|-----------------|
+| Keycloak Upgrade | `docker-compose.yml` (image version + KC_FEATURES) |
 | CRUD Endpoints | `handlers/events.go`, `handlers/routes.go`, `repository/*.go` |
 | RBAC | `handlers/auth.go`, `data/import/events-realm.json` |
-| Multi-Org | `data/db/*.sql`, `models/`, `repository/`, `handlers/` |
+| Multi-Org (Keycloak) | `data/import/events-realm.json` (org mapper), Keycloak Admin UI |
+| Multi-Org (Backend) | `handlers/auth.go`, `handlers/events.go`, `repository/*.go`, `data/db/02-*.sql` |
+| Multi-Org (Frontend) | `frontend/html/js/services.js`, `frontend/html/templates/*.html` |
 | Token Refresh | `frontend/html/js/services.js` |
 | Frontend UI | `frontend/html/templates/*.html`, `frontend/html/js/controllers.js` |
 | Tests | `backend/internal/handlers/*_test.go`, `frontend/test/` |
