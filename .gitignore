@@ -6,3 +6,6 @@
 # ignoring parent-charts
 /charts/**/*.tgz
 /backend/main
+
+# PID files for mage start/stop
+/.pids/

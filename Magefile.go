@@ -1,3 +1,4 @@
+//go:build mage
 // +build mage
 
 package main
@@ -6,7 +7,39 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 )
+
+var pidDir = ".pids"
+
+// savePID saves a process PID to a file
+func savePID(name string, pid int) error {
+	os.MkdirAll(pidDir, 0755)
+	return os.WriteFile(filepath.Join(pidDir, name+".pid"),
+		[]byte(fmt.Sprintf("%d", pid)), 0644)
+}
+
+// readPID reads a PID from a file
+func readPID(name string) (int, error) {
+	data, err := os.ReadFile(filepath.Join(pidDir, name+".pid"))
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(string(data)))
+}
+
+// killProcess kills a process by name
+func killProcess(name string) {
+	if pid, err := readPID(name); err == nil {
+		if p, err := os.FindProcess(pid); err == nil {
+			p.Kill()
+		}
+		os.Remove(filepath.Join(pidDir, name+".pid"))
+	}
+}
 
 // Default target to run when none is specified
 var Default = All
@@ -40,15 +73,63 @@ func Build() error {
 	return nil
 }
 
-// Start starts all services using docker-compose
+// Start starts infrastructure via docker, backend and frontend directly
 func Start() error {
-	fmt.Println("Starting all services with docker-compose...")
-	return sh("docker-compose up -d")
+	// 1. Start infrastructure (keycloak + postgres)
+	fmt.Println("Starting infrastructure (Keycloak + PostgreSQL)...")
+	if err := sh("docker-compose up -d"); err != nil {
+		return fmt.Errorf("failed to start infrastructure: %w", err)
+	}
+	fmt.Println("Infrastructure started, waiting for services...")
+	time.Sleep(5 * time.Second)
+
+	// 2. Start backend
+	fmt.Println("Starting backend...")
+	backendCmd := exec.Command("go", "run", "./cmd/api")
+	backendCmd.Dir = "backend"
+	backendCmd.Env = append(os.Environ(),
+		"DB_HOST=localhost",
+		"DB_PORT=5432",
+		"DB_USER=admin",
+		"DB_PASSWORD=admin",
+		"DB_NAME=events_demo",
+		"KEYCLOAK_URL=http://localhost:8081",
+		"SERVER_PORT=8082",
+	)
+	backendCmd.Stdout = os.Stdout
+	backendCmd.Stderr = os.Stderr
+	if err := backendCmd.Start(); err != nil {
+		return fmt.Errorf("failed to start backend: %w", err)
+	}
+	savePID("backend", backendCmd.Process.Pid)
+
+	// 3. Start frontend with npx serve
+	fmt.Println("Starting frontend...")
+	frontendCmd := exec.Command("npx", "serve", "-l", "8080")
+	frontendCmd.Dir = "frontend/html"
+	frontendCmd.Stdout = os.Stdout
+	frontendCmd.Stderr = os.Stderr
+	if err := frontendCmd.Start(); err != nil {
+		return fmt.Errorf("failed to start frontend: %w", err)
+	}
+	savePID("frontend", frontendCmd.Process.Pid)
+
+	fmt.Println("\nAll services started:")
+	fmt.Println("  Frontend: http://localhost:8080")
+	fmt.Println("  Backend:  http://localhost:8082")
+	fmt.Println("  Keycloak: http://localhost:8081")
+	return nil
 }
 
 // Stop stops all services
 func Stop() error {
-	fmt.Println("Stopping all services...")
+	fmt.Println("Stopping backend...")
+	killProcess("backend")
+
+	fmt.Println("Stopping frontend...")
+	killProcess("frontend")
+
+	fmt.Println("Stopping infrastructure...")
 	return sh("docker-compose down")
 }
 
