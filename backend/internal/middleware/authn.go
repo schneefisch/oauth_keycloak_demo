@@ -1,11 +1,11 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/config"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/oauth"
@@ -94,24 +94,24 @@ func extractBearerToken(r *http.Request) (string, bool) {
 type JWTAuthMiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
 
 // NewJWTAuthMiddleware creates a new JWT auth middleware with the given configuration
-func NewJWTAuthMiddleware(authConfig config.AuthConfig) JWTAuthMiddlewareFunc {
-	return NewJWTAuthMiddlewareWithClient(authConfig, &http.Client{})
+func NewJWTAuthMiddleware(authConfig config.AuthConfig) (JWTAuthMiddlewareFunc, error) {
+	return NewJWTAuthMiddlewareWithContext(context.Background(), authConfig)
 }
 
-// NewJWTAuthMiddlewareWithClient creates a new JWT auth middleware with the given configuration and HTTP client
-func NewJWTAuthMiddlewareWithClient(authConfig config.AuthConfig, client HTTPClient) JWTAuthMiddlewareFunc {
+// NewJWTAuthMiddlewareWithContext creates a new JWT auth middleware with the given configuration and context
+func NewJWTAuthMiddlewareWithContext(ctx context.Context, authConfig config.AuthConfig) (JWTAuthMiddlewareFunc, error) {
 	// Build JWKS URL from Keycloak configuration
 	jwksURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs",
 		authConfig.KeycloakURL, authConfig.RealmName)
 
-	// Convert HTTPClient to oauth.HTTPClient
-	oauthClient := &httpClientAdapter{client}
-
-	// Create JWKS cache with 5-minute TTL
-	jwksCache := oauth.NewJWKSCache(jwksURL, oauthClient, 5*time.Minute)
-
 	// Build expected issuer
 	expectedIssuer := fmt.Sprintf("%s/realms/%s", authConfig.KeycloakURL, authConfig.RealmName)
+
+	// Create JWKS validator using keyfunc library
+	validator, err := oauth.NewJWKSValidator(ctx, jwksURL, expectedIssuer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create JWKS validator: %w", err)
+	}
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +144,7 @@ func NewJWTAuthMiddlewareWithClient(authConfig config.AuthConfig, client HTTPCli
 			tokenString := parts[1]
 
 			// Validate the JWT
-			claims, err := oauth.ValidateJWT(tokenString, jwksCache, expectedIssuer)
+			claims, err := validator.ValidateToken(tokenString)
 			if err != nil {
 				log.Printf("JWT validation failed: %v", err)
 				http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
@@ -161,5 +161,5 @@ func NewJWTAuthMiddlewareWithClient(authConfig config.AuthConfig, client HTTPCli
 			// Call the next handler
 			next(w, r)
 		}
-	}
+	}, nil
 }

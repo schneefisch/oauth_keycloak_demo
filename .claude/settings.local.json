@@ -7,7 +7,11 @@
       "Bash(gofmt:*)",
       "Bash(golangci-lint run:*)",
       "Bash(tree:*)",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(go get:*)",
+      "Bash(go mod tidy:*)"
     ]
   }
 }
