@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -274,6 +275,196 @@ func TestAuthMiddleware_IntrospectionError(t *testing.T) {
 	mockClient := &MockHTTPClient{
 		DoFunc: func(req *http.Request) (*http.Response, error) {
 			return createErrorResponse(), nil
+		},
+	}
+
+	handlerCalled := false
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	authMiddleware := NewIntrospectionAuthMiddlewareWithClient(testConfig.Auth, mockClient)
+	handler := authMiddleware(testHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Authorization", "Bearer some-token")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, rr.Code)
+	}
+	if handlerCalled {
+		t.Error("Handler should not have been called")
+	}
+}
+
+// MockTokenValidator is a mock implementation of the TokenValidator interface
+type MockTokenValidator struct {
+	ValidateFunc func(token string) (*oauth.AuthClaims, error)
+}
+
+// ValidateToken implements the TokenValidator interface
+func (m *MockTokenValidator) ValidateToken(token string) (*oauth.AuthClaims, error) {
+	return m.ValidateFunc(token)
+}
+
+func TestAuthMiddlewareWithValidator_ValidToken(t *testing.T) {
+	expectedClaims := &oauth.AuthClaims{
+		Subject:  "test-subject",
+		Username: "test-user",
+		Scopes:   []string{"read", "write"},
+	}
+
+	mockValidator := &MockTokenValidator{
+		ValidateFunc: func(token string) (*oauth.AuthClaims, error) {
+			if token != "valid-token" {
+				t.Errorf("Expected token 'valid-token', got '%s'", token)
+			}
+			return expectedClaims, nil
+		},
+	}
+
+	var capturedClaims *oauth.AuthClaims
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedClaims = oauth.GetAuthClaims(r)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	authMiddleware := NewAuthMiddlewareWithValidator(mockValidator)
+	handler := authMiddleware(testHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Authorization", "Bearer valid-token")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
+	}
+	if capturedClaims == nil {
+		t.Fatal("Expected claims to be stored in context")
+	}
+	if capturedClaims.Subject != expectedClaims.Subject {
+		t.Errorf("Expected Subject '%s', got '%s'", expectedClaims.Subject, capturedClaims.Subject)
+	}
+	if capturedClaims.Username != expectedClaims.Username {
+		t.Errorf("Expected Username '%s', got '%s'", expectedClaims.Username, capturedClaims.Username)
+	}
+	if !capturedClaims.HasScope("read") || !capturedClaims.HasScope("write") {
+		t.Error("Expected claims to have 'read' and 'write' scopes")
+	}
+}
+
+func TestAuthMiddlewareWithValidator_ValidationError(t *testing.T) {
+	mockValidator := &MockTokenValidator{
+		ValidateFunc: func(token string) (*oauth.AuthClaims, error) {
+			return nil, fmt.Errorf("token validation failed")
+		},
+	}
+
+	handlerCalled := false
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	authMiddleware := NewAuthMiddlewareWithValidator(mockValidator)
+	handler := authMiddleware(testHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Authorization", "Bearer invalid-token")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, rr.Code)
+	}
+	if handlerCalled {
+		t.Error("Handler should not have been called")
+	}
+}
+
+func TestExtractBearerToken_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name          string
+		header        string
+		expectedToken string
+		expectedOK    bool
+	}{
+		{
+			name:          "lowercase bearer should fail",
+			header:        "bearer token123",
+			expectedToken: "",
+			expectedOK:    false,
+		},
+		{
+			name:          "multiple spaces passes but includes leading space in token",
+			header:        "Bearer  token123",
+			expectedToken: " token123",
+			expectedOK:    true,
+		},
+		{
+			name:          "tab separator should fail",
+			header:        "Bearer\ttoken123",
+			expectedToken: "",
+			expectedOK:    false,
+		},
+		{
+			name:          "BEARER uppercase should fail",
+			header:        "BEARER token123",
+			expectedToken: "",
+			expectedOK:    false,
+		},
+		{
+			name:          "mixed case should fail",
+			header:        "BeArEr token123",
+			expectedToken: "",
+			expectedOK:    false,
+		},
+		{
+			name:          "valid token with single space should pass",
+			header:        "Bearer valid-token",
+			expectedToken: "valid-token",
+			expectedOK:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			req.Header.Set("Authorization", tt.header)
+
+			token, ok := extractBearerToken(req)
+
+			if ok != tt.expectedOK {
+				t.Errorf("Expected ok=%v, got ok=%v", tt.expectedOK, ok)
+			}
+			if token != tt.expectedToken {
+				t.Errorf("Expected token='%s', got token='%s'", tt.expectedToken, token)
+			}
+		})
+	}
+}
+
+func TestAuthMiddleware_HTTPClientNetworkError(t *testing.T) {
+	testConfig := config.TestConfig(&config.Config{
+		Auth: config.AuthConfig{
+			KeycloakURL:   "http://mock-keycloak:8080",
+			ClientID:      "test-client",
+			ClientSecret:  "test-secret",
+			RequiredScope: "test-scope",
+			RealmName:     "test-realm",
+		},
+	})
+
+	mockClient := &MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			return nil, fmt.Errorf("network error: connection refused")
 		},
 	}
 
