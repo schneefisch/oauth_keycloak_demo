@@ -258,3 +258,58 @@ func TestNewTokenValidator_JWKS_WithContext(t *testing.T) {
 		t.Log("JWKS validator created successfully (mock JWKS server may be running)")
 	}
 }
+
+// TestIntrospectionValidator_AlgNoneTokenRejectedByKeycloak documents the security
+// behavior of the introspection validation method against "alg: none" attacks.
+//
+// Unlike JWKS validation (which validates JWTs locally), introspection delegates
+// ALL token validation to Keycloak. The backend never parses the JWT locally -
+// it simply sends the token to Keycloak's introspection endpoint and checks if
+// Keycloak reports the token as "active".
+//
+// For "alg: none" attack tokens:
+// - Keycloak will reject them as invalid (returning active: false)
+// - Our code correctly rejects any token where active == false
+//
+// This test documents this behavior by mocking Keycloak's expected response
+// to an "alg: none" token.
+func TestIntrospectionValidator_AlgNoneTokenRejectedByKeycloak(t *testing.T) {
+	// Mock Keycloak's response: it rejects the "alg: none" token as inactive
+	mockClient := &MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Keycloak will return active: false for any invalid token,
+			// including "alg: none" attack tokens
+			response := TokenIntrospectionResponse{
+				Active: false,
+			}
+			responseBody, _ := json.Marshal(response)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(string(responseBody))),
+				Header:     make(http.Header),
+			}, nil
+		},
+	}
+
+	authConfig := config.AuthConfig{
+		KeycloakURL:  "http://keycloak:8080",
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+		RealmName:    "test-realm",
+	}
+
+	validator := NewIntrospectionValidator(authConfig, mockClient)
+
+	// Craft an "alg: none" attack token (same format as the JWKS test)
+	// This token has no signature, attempting to bypass validation
+	algNoneToken := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhdHRhY2tlciJ9."
+
+	_, err := validator.ValidateToken(algNoneToken)
+
+	if err == nil {
+		t.Fatal("ValidateToken() expected error for 'alg: none' attack token, got nil")
+	}
+
+	// The error should indicate the token is not active
+	t.Logf("Token correctly rejected with error: %v", err)
+}
