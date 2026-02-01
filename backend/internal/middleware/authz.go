@@ -13,13 +13,10 @@ type AuthzConfig struct {
 	RequireAll     bool     // If true, ALL scopes and roles must be present; if false, ANY scope OR role is sufficient
 }
 
-// AuthzMiddlewareFunc is a function that wraps an http.HandlerFunc with authorization
-type AuthzMiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
-
 // NewAuthzMiddleware creates a new authorization middleware with the given configuration
-func NewAuthzMiddleware(config AuthzConfig) AuthzMiddlewareFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+func NewAuthzMiddleware(config AuthzConfig) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Get claims from context (set by AuthN middleware)
 			claims := oauth.GetAuthClaims(r)
 			if claims == nil {
@@ -34,8 +31,8 @@ func NewAuthzMiddleware(config AuthzConfig) AuthzMiddlewareFunc {
 			}
 
 			// User is authorized, call the next handler
-			next(w, r)
-		}
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 

@@ -14,10 +14,10 @@ func TestAuthzMiddleware_NoClaimsInContext(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authzMiddleware := NewAuthzMiddleware(config)
 	handler := authzMiddleware(testHandler)
@@ -25,7 +25,7 @@ func TestAuthzMiddleware_NoClaimsInContext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusForbidden {
 		t.Errorf("Expected status %d, got %d", http.StatusForbidden, rr.Code)
@@ -42,10 +42,10 @@ func TestAuthzMiddleware_MissingRequiredScope(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authzMiddleware := NewAuthzMiddleware(config)
 	handler := authzMiddleware(testHandler)
@@ -58,7 +58,7 @@ func TestAuthzMiddleware_MissingRequiredScope(t *testing.T) {
 	req = oauth.SetAuthClaims(req, claims)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusForbidden {
 		t.Errorf("Expected status %d, got %d", http.StatusForbidden, rr.Code)
@@ -75,10 +75,10 @@ func TestAuthzMiddleware_MissingRequiredRole(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authzMiddleware := NewAuthzMiddleware(config)
 	handler := authzMiddleware(testHandler)
@@ -91,7 +91,7 @@ func TestAuthzMiddleware_MissingRequiredRole(t *testing.T) {
 	req = oauth.SetAuthClaims(req, claims)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusForbidden {
 		t.Errorf("Expected status %d, got %d", http.StatusForbidden, rr.Code)
@@ -108,10 +108,10 @@ func TestAuthzMiddleware_HasAllRequiredScopes(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authzMiddleware := NewAuthzMiddleware(config)
 	handler := authzMiddleware(testHandler)
@@ -124,7 +124,7 @@ func TestAuthzMiddleware_HasAllRequiredScopes(t *testing.T) {
 	req = oauth.SetAuthClaims(req, claims)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
@@ -141,10 +141,10 @@ func TestAuthzMiddleware_HasAnyRequiredScope_RequireAllFalse(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authzMiddleware := NewAuthzMiddleware(config)
 	handler := authzMiddleware(testHandler)
@@ -157,7 +157,7 @@ func TestAuthzMiddleware_HasAnyRequiredScope_RequireAllFalse(t *testing.T) {
 	req = oauth.SetAuthClaims(req, claims)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
@@ -174,10 +174,10 @@ func TestAuthzMiddleware_HasAllRequiredRoles(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authzMiddleware := NewAuthzMiddleware(config)
 	handler := authzMiddleware(testHandler)
@@ -190,7 +190,7 @@ func TestAuthzMiddleware_HasAllRequiredRoles(t *testing.T) {
 	req = oauth.SetAuthClaims(req, claims)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
@@ -207,10 +207,10 @@ func TestAuthzMiddleware_HasAnyRequiredRole_RequireAllFalse(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authzMiddleware := NewAuthzMiddleware(config)
 	handler := authzMiddleware(testHandler)
@@ -223,7 +223,7 @@ func TestAuthzMiddleware_HasAnyRequiredRole_RequireAllFalse(t *testing.T) {
 	req = oauth.SetAuthClaims(req, claims)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
@@ -240,10 +240,10 @@ func TestAuthzMiddleware_NoRequirements_PassesThrough(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authzMiddleware := NewAuthzMiddleware(config)
 	handler := authzMiddleware(testHandler)
@@ -255,7 +255,7 @@ func TestAuthzMiddleware_NoRequirements_PassesThrough(t *testing.T) {
 	req = oauth.SetAuthClaims(req, claims)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
@@ -312,10 +312,10 @@ func TestAuthzMiddleware_CombinedScopesAndRoles_RequireAll(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handlerCalled := false
-			testHandler := func(w http.ResponseWriter, r *http.Request) {
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerCalled = true
 				w.WriteHeader(http.StatusOK)
-			}
+			})
 
 			authzMiddleware := NewAuthzMiddleware(config)
 			handler := authzMiddleware(testHandler)
@@ -329,7 +329,7 @@ func TestAuthzMiddleware_CombinedScopesAndRoles_RequireAll(t *testing.T) {
 			req = oauth.SetAuthClaims(req, claims)
 			rr := httptest.NewRecorder()
 
-			handler(rr, req)
+			handler.ServeHTTP(rr, req)
 
 			if rr.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, rr.Code)
@@ -388,10 +388,10 @@ func TestAuthzMiddleware_CombinedScopesAndRoles_RequireAny(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handlerCalled := false
-			testHandler := func(w http.ResponseWriter, r *http.Request) {
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerCalled = true
 				w.WriteHeader(http.StatusOK)
-			}
+			})
 
 			authzMiddleware := NewAuthzMiddleware(config)
 			handler := authzMiddleware(testHandler)
@@ -405,7 +405,7 @@ func TestAuthzMiddleware_CombinedScopesAndRoles_RequireAny(t *testing.T) {
 			req = oauth.SetAuthClaims(req, claims)
 			rr := httptest.NewRecorder()
 
-			handler(rr, req)
+			handler.ServeHTTP(rr, req)
 
 			if rr.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, rr.Code)

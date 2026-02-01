@@ -91,21 +91,20 @@ func TestGetEvents(t *testing.T) {
 
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
-	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
 	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
-	// Register the routes manually
-	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
-	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
-	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	// Register the routes manually using http.Handler pattern
+	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
+	mux.Handle("/events", authMiddleware(http.HandlerFunc(handler.GetEvents)))
+	mux.Handle("/events/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/events/" {
 			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
 			return
 		}
-	}))
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	})))
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
@@ -183,21 +182,20 @@ func TestGetEventsMethodNotAllowed(t *testing.T) {
 
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
-	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
 	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
-	// Register the routes manually
-	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
-	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
-	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	// Register the routes manually using http.Handler pattern
+	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
+	mux.Handle("/events", authMiddleware(http.HandlerFunc(handler.GetEvents)))
+	mux.Handle("/events/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/events/" {
 			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
 			return
 		}
-	}))
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	})))
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
@@ -241,21 +239,20 @@ func TestGetEventByID(t *testing.T) {
 
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
-	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
 	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
-	// Register the routes manually
-	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
-	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
-	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	// Register the routes manually using http.Handler pattern
+	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
+	mux.Handle("/events", authMiddleware(http.HandlerFunc(handler.GetEvents)))
+	mux.Handle("/events/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/events/" {
 			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
 			return
 		}
-	}))
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	})))
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
@@ -327,21 +324,20 @@ func TestGetEventByIDNotFound(t *testing.T) {
 
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
-	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
 	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
-	// Register the routes manually
-	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
-	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
-	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	// Register the routes manually using http.Handler pattern
+	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
+	mux.Handle("/events", authMiddleware(http.HandlerFunc(handler.GetEvents)))
+	mux.Handle("/events/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/events/" {
 			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
 			return
 		}
-	}))
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	})))
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
@@ -385,21 +381,20 @@ func TestGetEventByIDMethodNotAllowed(t *testing.T) {
 
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
-	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
 	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
-	// Register the routes manually
-	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
-	http.HandleFunc("/events", authMiddleware(handler.GetEvents))
-	http.HandleFunc("/events/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	// Register the routes manually using http.Handler pattern
+	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
+	mux.Handle("/events", authMiddleware(http.HandlerFunc(handler.GetEvents)))
+	mux.Handle("/events/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/events/" {
 			http.Redirect(w, r, "/events", http.StatusMovedPermanently)
 			return
 		}
-	}))
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	})))
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})

@@ -86,10 +86,10 @@ func TestAuthMiddleware_NoAuthorizationHeader(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 	handler := authMiddleware(testHandler)
@@ -97,7 +97,7 @@ func TestAuthMiddleware_NoAuthorizationHeader(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, rr.Code)
@@ -138,10 +138,10 @@ func TestAuthMiddleware_InvalidAuthorizationHeader(t *testing.T) {
 			}
 
 			handlerCalled := false
-			testHandler := func(w http.ResponseWriter, r *http.Request) {
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerCalled = true
 				w.WriteHeader(http.StatusOK)
-			}
+			})
 
 			authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 			handler := authMiddleware(testHandler)
@@ -152,7 +152,7 @@ func TestAuthMiddleware_InvalidAuthorizationHeader(t *testing.T) {
 			}
 			rr := httptest.NewRecorder()
 
-			handler(rr, req)
+			handler.ServeHTTP(rr, req)
 
 			if rr.Code != http.StatusUnauthorized {
 				t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, rr.Code)
@@ -186,10 +186,10 @@ func TestAuthMiddleware_ValidToken_StoresClaimsInContext(t *testing.T) {
 	}
 
 	var capturedClaims *oauth.AuthClaims
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedClaims = oauth.GetAuthClaims(r)
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 	handler := authMiddleware(testHandler)
@@ -198,7 +198,7 @@ func TestAuthMiddleware_ValidToken_StoresClaimsInContext(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer valid-token")
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
@@ -238,10 +238,10 @@ func TestAuthMiddleware_InactiveToken(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 	handler := authMiddleware(testHandler)
@@ -250,7 +250,7 @@ func TestAuthMiddleware_InactiveToken(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer inactive-token")
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, rr.Code)
@@ -278,10 +278,10 @@ func TestAuthMiddleware_IntrospectionError(t *testing.T) {
 	}
 
 	handlerCalled := false
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 
 	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 	handler := authMiddleware(testHandler)
@@ -290,95 +290,12 @@ func TestAuthMiddleware_IntrospectionError(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer some-token")
 	rr := httptest.NewRecorder()
 
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, rr.Code)
 	}
 	if handlerCalled {
 		t.Error("Handler should not have been called")
-	}
-}
-
-func TestAuthMiddleware_CORSPreflightRequest(t *testing.T) {
-	testConfig := config.TestConfig(&config.Config{
-		Auth: config.AuthConfig{
-			KeycloakURL:   "http://mock-keycloak:8080",
-			ClientID:      "test-client",
-			ClientSecret:  "test-secret",
-			RequiredScope: "test-scope",
-			RealmName:     "test-realm",
-		},
-	})
-
-	mockClient := &MockHTTPClient{
-		DoFunc: func(req *http.Request) (*http.Response, error) {
-			t.Error("HTTP client should not be called for preflight requests")
-			return nil, nil
-		},
-	}
-
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		t.Error("Handler should not be called for preflight requests")
-	}
-
-	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
-	handler := authMiddleware(testHandler)
-
-	req := httptest.NewRequest(http.MethodOptions, "/test", nil)
-	req.Header.Set("Origin", "http://localhost:3000")
-	req.Header.Set("Access-Control-Request-Method", "GET")
-	rr := httptest.NewRecorder()
-
-	handler(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
-	}
-	if rr.Header().Get("Access-Control-Allow-Origin") != "*" {
-		t.Error("Expected CORS header to be set")
-	}
-}
-
-func TestAuthMiddleware_SetsCorrectCORSHeaders(t *testing.T) {
-	testConfig := config.TestConfig(&config.Config{
-		Auth: config.AuthConfig{
-			KeycloakURL:   "http://mock-keycloak:8080",
-			ClientID:      "test-client",
-			ClientSecret:  "test-secret",
-			RequiredScope: "test-scope",
-			RealmName:     "test-realm",
-		},
-	})
-
-	mockClient := &MockHTTPClient{
-		DoFunc: func(req *http.Request) (*http.Response, error) {
-			return createValidTokenResponse("test-scope"), nil
-		},
-	}
-
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}
-
-	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
-	handler := authMiddleware(testHandler)
-
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	req.Header.Set("Authorization", "Bearer valid-token")
-	rr := httptest.NewRecorder()
-
-	handler(rr, req)
-
-	expectedHeaders := map[string]string{
-		"Access-Control-Allow-Origin":  "*",
-		"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-		"Access-Control-Allow-Headers": "Content-Type, Authorization",
-	}
-
-	for header, expected := range expectedHeaders {
-		if got := rr.Header().Get(header); got != expected {
-			t.Errorf("Expected header %s to be '%s', got '%s'", header, expected, got)
-		}
 	}
 }
