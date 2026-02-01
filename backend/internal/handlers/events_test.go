@@ -10,9 +10,21 @@ import (
 	"testing"
 
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/config"
+	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/middleware"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/models"
+	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/oauth"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/repository"
 )
+
+// MockHTTPClient is a mock implementation of the HTTPClient interface
+type MockHTTPClient struct {
+	DoFunc func(req *http.Request) (*http.Response, error)
+}
+
+// Do implements the HTTPClient interface
+func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	return m.DoFunc(req)
+}
 
 // createMockAuthConfig creates a mock auth config for testing
 func createMockAuthConfig() config.AuthConfig {
@@ -31,7 +43,7 @@ func createMockHTTPClient() *MockHTTPClient {
 			// Check if this is a token introspection request
 			if strings.Contains(req.URL.Path, "token/introspect") {
 				// Return a valid token response
-				response := TokenIntrospectionResponse{
+				response := oauth.TokenIntrospectionResponse{
 					Active:    true,
 					Scope:     "test-scope",
 					ClientID:  "test-client",
@@ -82,7 +94,7 @@ func TestGetEvents(t *testing.T) {
 	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
-	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually
 	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
@@ -174,7 +186,7 @@ func TestGetEventsMethodNotAllowed(t *testing.T) {
 	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
-	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually
 	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
@@ -232,7 +244,7 @@ func TestGetEventByID(t *testing.T) {
 	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
-	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually
 	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
@@ -318,7 +330,7 @@ func TestGetEventByIDNotFound(t *testing.T) {
 	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
-	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually
 	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))
@@ -376,7 +388,7 @@ func TestGetEventByIDMethodNotAllowed(t *testing.T) {
 	http.DefaultServeMux = mux
 
 	// Create the auth middleware with the mock client
-	authMiddleware := NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually
 	http.HandleFunc("/events/{id}", authMiddleware(handler.GetEventByID))

@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(docker info:*)",
-      "Bash(podman machine:*)"
+      "Bash(podman machine:*)",
+      "Bash(go test:*)",
+      "Bash(gofmt:*)",
+      "Bash(golangci-lint run:*)",
+      "Bash(tree:*)",
+      "Bash(go build:*)"
     ]
   }
 }
