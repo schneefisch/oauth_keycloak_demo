@@ -33,21 +33,25 @@ func IntrospectToken(token string, authConfig config.AuthConfig, client HTTPClie
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
+	// Calling the introspection endpoint
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("introspection request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// Check response status
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("introspection returned status %d", resp.StatusCode)
 	}
 
+	// Extract and parse the response-body into TokenIntrospectionResponse
 	var introspectionResp TokenIntrospectionResponse
 	if err := json.NewDecoder(resp.Body).Decode(&introspectionResp); err != nil {
 		return nil, fmt.Errorf("failed to decode introspection response: %w", err)
 	}
 
+	// Check if the token is active, if not, return error
 	if !introspectionResp.Active {
 		return nil, fmt.Errorf("token is not active")
 	}
