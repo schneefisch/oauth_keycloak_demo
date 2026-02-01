@@ -91,7 +91,7 @@ func TestAuthMiddleware_NoAuthorizationHeader(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
+	authMiddleware := NewIntrospectionAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 	handler := authMiddleware(testHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -143,7 +143,7 @@ func TestAuthMiddleware_InvalidAuthorizationHeader(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 			})
 
-			authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
+			authMiddleware := NewIntrospectionAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 			handler := authMiddleware(testHandler)
 
 			req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -191,7 +191,7 @@ func TestAuthMiddleware_ValidToken_StoresClaimsInContext(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
+	authMiddleware := NewIntrospectionAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 	handler := authMiddleware(testHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -243,7 +243,7 @@ func TestAuthMiddleware_InactiveToken(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
+	authMiddleware := NewIntrospectionAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 	handler := authMiddleware(testHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -283,7 +283,7 @@ func TestAuthMiddleware_IntrospectionError(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	authMiddleware := NewAuthMiddlewareWithClient(testConfig.Auth, mockClient)
+	authMiddleware := NewIntrospectionAuthMiddlewareWithClient(testConfig.Auth, mockClient)
 	handler := authMiddleware(testHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)

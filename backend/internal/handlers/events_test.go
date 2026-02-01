@@ -93,7 +93,7 @@ func TestGetEvents(t *testing.T) {
 	mux := http.NewServeMux()
 
 	// Create the auth middleware with the mock client
-	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewIntrospectionAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually using http.Handler pattern
 	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
@@ -184,7 +184,7 @@ func TestGetEventsMethodNotAllowed(t *testing.T) {
 	mux := http.NewServeMux()
 
 	// Create the auth middleware with the mock client
-	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewIntrospectionAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually using http.Handler pattern
 	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
@@ -241,7 +241,7 @@ func TestGetEventByID(t *testing.T) {
 	mux := http.NewServeMux()
 
 	// Create the auth middleware with the mock client
-	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewIntrospectionAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually using http.Handler pattern
 	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
@@ -326,7 +326,7 @@ func TestGetEventByIDNotFound(t *testing.T) {
 	mux := http.NewServeMux()
 
 	// Create the auth middleware with the mock client
-	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewIntrospectionAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually using http.Handler pattern
 	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))
@@ -383,7 +383,7 @@ func TestGetEventByIDMethodNotAllowed(t *testing.T) {
 	mux := http.NewServeMux()
 
 	// Create the auth middleware with the mock client
-	authMiddleware := middleware.NewAuthMiddlewareWithClient(mockAuthConfig, mockClient)
+	authMiddleware := middleware.NewIntrospectionAuthMiddlewareWithClient(mockAuthConfig, mockClient)
 
 	// Register the routes manually using http.Handler pattern
 	mux.Handle("/events/{id}", authMiddleware(http.HandlerFunc(handler.GetEventByID)))

@@ -19,7 +19,7 @@ func SetupRoutesWithClient(eventsHandler *EventsHandler, authConfig config.AuthC
 	cors := middleware.NewCORSMiddleware(middleware.DefaultCORSConfig())
 
 	// Create AuthN middleware (validates token, stores claims in context)
-	authN := middleware.NewAuthMiddlewareWithClient(authConfig, client)
+	authN := middleware.NewIntrospectionAuthMiddlewareWithClient(authConfig, client)
 
 	// Create AuthZ middleware (checks required scopes)
 	authZ := middleware.NewAuthzMiddleware(middleware.AuthzConfig{

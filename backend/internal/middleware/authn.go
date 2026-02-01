@@ -11,11 +11,11 @@ import (
 
 // NewAuthMiddleware creates a new auth middleware with the given configuration
 func NewAuthMiddleware(authConfig config.AuthConfig) func(http.Handler) http.Handler {
-	return NewAuthMiddlewareWithClient(authConfig, &http.Client{})
+	return NewIntrospectionAuthMiddlewareWithClient(authConfig, &http.Client{})
 }
 
-// NewAuthMiddlewareWithClient creates a new auth middleware with the given configuration and HTTP client
-func NewAuthMiddlewareWithClient(authConfig config.AuthConfig, client oauth.HTTPClient) func(http.Handler) http.Handler {
+// NewIntrospectionAuthMiddlewareWithClient creates a new auth middleware with the given configuration and HTTP client
+func NewIntrospectionAuthMiddlewareWithClient(authConfig config.AuthConfig, client oauth.HTTPClient) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Extract Bearer token from Authorization header
