@@ -3,15 +3,15 @@ package oauth
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/config"
 )
 
-// JWTClaims represents the claims we expect in the JWT
-type JWTClaims struct {
+// jwtClaims represents the claims we expect in the JWT (internal use only)
+type jwtClaims struct {
 	jwt.RegisteredClaims
 	Scope    string   `json:"scope"`
 	ClientID string   `json:"client_id"`
@@ -34,9 +34,18 @@ func NewJWKSValidator(ctx context.Context, jwksURL, expectedIssuer string) (*JWK
 	return &JWKSValidator{keyfunc: kf, expectedIssuer: expectedIssuer}, nil
 }
 
-// ValidateToken validates a JWT and returns the claims
-func (v *JWKSValidator) ValidateToken(tokenString string) (*JWTClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, v.keyfunc.Keyfunc,
+// NewJWKSValidatorFromConfig creates a JWKSValidator from AuthConfig
+func NewJWKSValidatorFromConfig(ctx context.Context, authConfig config.AuthConfig) (*JWKSValidator, error) {
+	jwksURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs",
+		authConfig.KeycloakURL, authConfig.RealmName)
+	expectedIssuer := fmt.Sprintf("%s/realms/%s",
+		authConfig.KeycloakURL, authConfig.RealmName)
+	return NewJWKSValidator(ctx, jwksURL, expectedIssuer)
+}
+
+// ValidateToken validates a JWT and returns AuthClaims
+func (v *JWKSValidator) ValidateToken(tokenString string) (*AuthClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwtClaims{}, v.keyfunc.Keyfunc,
 		jwt.WithIssuer(v.expectedIssuer),
 		jwt.WithValidMethods([]string{"RS256", "RS384", "RS512"}),
 	)
@@ -44,16 +53,19 @@ func (v *JWKSValidator) ValidateToken(tokenString string) (*JWTClaims, error) {
 		return nil, fmt.Errorf("token validation failed: %w", err)
 	}
 
-	claims, ok := token.Claims.(*JWTClaims)
+	claims, ok := token.Claims.(*jwtClaims)
 	if !ok || !token.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
 
-	return claims, nil
-}
+	// Convert to AuthClaims
+	var scopes []string
+	if claims.Scope != "" {
+		scopes = strings.Split(claims.Scope, " ")
+	}
 
-// HasScope checks if the token's scope string contains the required scope
-func HasScope(scopeString, requiredScope string) bool {
-	scopes := strings.Split(scopeString, " ")
-	return slices.Contains(scopes, requiredScope)
+	return &AuthClaims{
+		Subject: claims.Subject,
+		Scopes:  scopes,
+	}, nil
 }

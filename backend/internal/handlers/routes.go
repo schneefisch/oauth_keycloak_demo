@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"log"
 	"net/http"
 
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/config"
@@ -10,16 +12,34 @@ import (
 
 // SetupRoutes configures all the HTTP routes for the application
 func SetupRoutes(eventsHandler *EventsHandler, authConfig config.AuthConfig) {
-	SetupRoutesWithClient(eventsHandler, authConfig, &http.Client{})
+	SetupRoutesWithContext(context.Background(), eventsHandler, authConfig)
 }
 
-// SetupRoutesWithClient configures all the HTTP routes for the application with a custom HTTP client
-func SetupRoutesWithClient(eventsHandler *EventsHandler, authConfig config.AuthConfig, client oauth.HTTPClient) {
+// SetupRoutesWithContext configures all the HTTP routes with a context for validator lifecycle
+// An optional HTTPClient can be provided for testing purposes
+func SetupRoutesWithContext(ctx context.Context, eventsHandler *EventsHandler, authConfig config.AuthConfig, client ...oauth.HTTPClient) {
 	// Create CORS middleware
 	cors := middleware.NewCORSMiddleware(middleware.DefaultCORSConfig())
 
-	// Create AuthN middleware (validates token, stores claims in context)
-	authN := middleware.NewIntrospectionAuthMiddlewareWithClient(authConfig, client)
+	// Use provided client or default to http.Client
+	var httpClient oauth.HTTPClient = &http.Client{}
+	if len(client) > 0 && client[0] != nil {
+		httpClient = client[0]
+	}
+
+	// Create validator based on config
+	method := oauth.ValidationMethod(authConfig.ValidationMethod)
+	validator, err := oauth.NewTokenValidator(method, oauth.ValidatorConfig{
+		AuthConfig: authConfig,
+		HTTPClient: httpClient,
+		Context:    ctx,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create token validator: %v", err)
+	}
+
+	// Create AuthN middleware using the validator
+	authN := middleware.NewAuthMiddlewareWithValidator(validator)
 
 	// Create AuthZ middleware (checks required scopes)
 	authZ := middleware.NewAuthzMiddleware(middleware.AuthzConfig{

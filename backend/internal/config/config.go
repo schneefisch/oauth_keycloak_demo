@@ -35,11 +35,12 @@ type DatabaseConfig struct {
 
 // AuthConfig holds authentication-related configuration
 type AuthConfig struct {
-	KeycloakURL   string `koanf:"keycloak_url"`
-	ClientID      string `koanf:"client_id"`
-	ClientSecret  string `koanf:"client_secret"`
-	RequiredScope string `koanf:"required_scope"`
-	RealmName     string `koanf:"realm_name"`
+	KeycloakURL      string `koanf:"keycloak_url"`
+	ClientID         string `koanf:"client_id"`
+	ClientSecret     string `koanf:"client_secret"`
+	RequiredScope    string `koanf:"required_scope"`
+	RealmName        string `koanf:"realm_name"`
+	ValidationMethod string `koanf:"validation_method"` // "introspection" (default) or "jwks"
 }
 
 // DefaultConfig returns a Config with default values
@@ -56,10 +57,11 @@ func DefaultConfig() *Config {
 			Name:     "events_demo",
 		},
 		Auth: AuthConfig{
-			KeycloakURL:   "http://localhost:8081",
-			ClientID:      "events-api",
-			RequiredScope: "events-api-access",
-			RealmName:     "events",
+			KeycloakURL:      "http://localhost:8081",
+			ClientID:         "events-api",
+			RequiredScope:    "events-api-access",
+			RealmName:        "events",
+			ValidationMethod: "introspection",
 		},
 	}
 }
@@ -123,6 +125,12 @@ func Load(configFile string) (*Config, error) {
 		cfg.Auth.RealmName = realmName
 	}
 
+	// Special handling for VALIDATION_METHOD environment variable
+	// This is needed to switch between introspection and jwks validation
+	if validationMethod := os.Getenv("VALIDATION_METHOD"); validationMethod != "" {
+		cfg.Auth.ValidationMethod = validationMethod
+	}
+
 	return cfg, nil
 }
 
@@ -169,6 +177,9 @@ func TestConfig(overrides *Config) *Config {
 		}
 		if overrides.Auth.RealmName != "" {
 			cfg.Auth.RealmName = overrides.Auth.RealmName
+		}
+		if overrides.Auth.ValidationMethod != "" {
+			cfg.Auth.ValidationMethod = overrides.Auth.ValidationMethod
 		}
 	}
 

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -32,9 +33,9 @@ func TestRoutesSetup(t *testing.T) {
 
 	// Create a new test server with the routes set up
 	mux := http.NewServeMux()
-	// Use the SetupRoutesWithClient function with the mock client
+	// Use the SetupRoutesWithContext function with the mock client
 	http.DefaultServeMux = mux
-	SetupRoutesWithClient(handler, mockAuthConfig, mockClient)
+	SetupRoutesWithContext(context.Background(), handler, mockAuthConfig, mockClient)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 

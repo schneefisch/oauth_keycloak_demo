@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	_ "github.com/lib/pq"
 	"github.com/schneefisch/oauth_keycloak_demo/backend/internal/config"
@@ -13,6 +17,19 @@ import (
 )
 
 func main() {
+	// Create context that will be canceled on shutdown signals
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle shutdown signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		log.Println("Shutdown signal received, canceling context...")
+		cancel()
+	}()
+
 	// Load configuration
 	cfg, err := config.Load("")
 	if err != nil {
@@ -32,12 +49,12 @@ func main() {
 	// Create a new events handler with the repository
 	eventsHandler := handlers.NewEventsHandler(eventsRepo)
 
-	// Setup all routes with auth configuration
-	handlers.SetupRoutes(eventsHandler, cfg.Auth)
+	// Setup all routes with auth configuration and context
+	handlers.SetupRoutesWithContext(ctx, eventsHandler, cfg.Auth)
 
 	// Start the server
 	addr := fmt.Sprintf(":%s", cfg.Server.Port)
-	log.Printf("Server starting on %s", addr)
+	log.Printf("Server starting on %s (validation method: %s)", addr, cfg.Auth.ValidationMethod)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
